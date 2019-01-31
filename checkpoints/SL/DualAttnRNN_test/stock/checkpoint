@@ -1,0 +1,2 @@
+model_checkpoint_path: "D:\\ML_Strategies\\Personae-master\\checkpoints\\SL\\DualAttnRNN_test\\stock\\model"
+all_model_checkpoint_paths: "D:\\ML_Strategies\\Personae-master\\checkpoints\\SL\\DualAttnRNN_test\\stock\\model"
