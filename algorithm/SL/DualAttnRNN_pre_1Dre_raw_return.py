@@ -4,14 +4,14 @@ import logging
 import os
 
 from algorithm import config
-from base.env.market import Market_folk_pre_1Dre
+from base.env.market_customize import Market_folk_pre_1Dre_raw_return
 from checkpoints import CHECKPOINTS_DIR
-from base.algorithm.model import BaseSLTFModel
-from sklearn.preprocessing import MinMaxScaler, StandardScaler
+from base.algorithm.model_customize import BaseSLTFModel_folk_pre_1Dre_raw_return
+from sklearn.preprocessing import StandardScaler
 from helper.args_parser import model_launcher_parser
 
 
-class Algorithm(BaseSLTFModel):
+class Algorithm(BaseSLTFModel_folk_pre_1Dre_raw_return):
     def __init__(self, session, env, seq_length, x_space, y_space, **options):
         super(Algorithm, self).__init__(session, env, **options)
 
@@ -115,7 +115,7 @@ def main(args):
     # training_data_ratio = 0.98
     training_data_ratio = args.training_data_ratio
 
-    env = Market_folk_pre_1Dre(codes, start_date="2008-01-01", end_date="2018-01-01", **{
+    env =Market_folk_pre_1Dre_raw_return(codes, start_date="2008-01-01", end_date="2018-01-01", **{
         "seq_length": 30,
         "market": market,
         "use_sequence": True,
@@ -137,7 +137,7 @@ def main(args):
     })
 
     algorithm.run()
-    algorithm.eval_and_plot_pre_1Dre()
+    algorithm.eval_and_plot()
 
 
 if __name__ == '__main__':
