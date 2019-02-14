@@ -7,6 +7,7 @@ from helper import data_ploter
 from tensorflow.contrib import rnn
 from helper.data_logger import generate_algorithm_logger
 import math
+from functools import reduce
 
 
 class BaseTFModel(object):
@@ -282,27 +283,50 @@ class BaseSLTFModel(BaseTFModel):
                                       label,
                                       self.save_path)
     # customize function
-    def eval_and_plot2(self):
+    def eval_and_plot_pre_1Dre(self):
+        def _to_price(list, mean, std, first_close):
+            func = np.vectorize(lambda x: (x * std + mean)/100 + 1)
+            ### return to daily change
+            daily_change_list = func(list)
+
+            ### return to price
+            label1 = [reduce(lambda x, y: x * y, daily_change_list[:i + 1]).tolist() for i in range(len(daily_change_list))]
+            price_list = np.array([[i[0] * first_close] for i in label1])
+            return price_list, daily_change_list
+
         x, label = self.env.get_test_data()
+        # price = self.env.original_frame
         # add new_code, scale the label and predict back
-        mean = self.env.scaler[0].mean_[-2]
-        std = math.sqrt(self.env.scaler[0].var_[-2])
-        # label = self.env.scaler.inverse_transform(label)
-        func = np.vectorize(lambda x: x * std + mean)
-        label = func(label)
+        first_index = self.env.e_data_indices[0]-1
+        first_close = self.env.origin_frames['600036']['close'].iloc[first_index]
+
+        mean = self.env.scaler[0].mean_[-1]
+        std = math.sqrt(self.env.scaler[0].var_[-1])
+        label_price, label_daily_change = _to_price(label, mean, std, first_close)
 
         y = self.predict(x)
+        y_price, y_daily_change = _to_price(y, mean, std, first_close)
+        with open(self.save_path + '_label_price.json', mode='w') as fp:
+            json.dump(label_price.tolist(), fp, indent=True)
 
-        y = func(y)
-        with open(self.save_path + '_y.json', mode='w') as fp:
-            json.dump(y.tolist(), fp, indent=True)
+        with open(self.save_path + '_label_daily_change.json', mode='w') as fp:
+            json.dump(label_daily_change.tolist(), fp, indent=True)
 
-        with open(self.save_path + '_label.json', mode='w') as fp:
-            json.dump(label.tolist(), fp, indent=True)
+        with open(self.save_path + '_y_price.json', mode='w') as fp:
+            json.dump(y_price.tolist(), fp, indent=True)
+
+        with open(self.save_path + '_y_daily_change.json', mode='w') as fp:
+            json.dump(y_daily_change.tolist(), fp, indent=True)
         data_ploter.plot_stock_series(self.env.codes,
-                                      y,
-                                      label,
-                                      self.save_path)
+                                      y_price,
+                                      label_price,
+                                      self.save_path + '_price')
+        data_ploter.plot_stock_series(self.env.codes,
+                                      y_daily_change,
+                                      label_daily_change,
+                                      self.save_path + '_daily_change')
+
+
 
 class BasePTModel(object):
 
