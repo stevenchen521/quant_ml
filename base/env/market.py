@@ -8,11 +8,21 @@ from base.env.trader import Trader
 from base.model.document import Stock, Future
 from sklearn.preprocessing import StandardScaler
 
+from enum import Enum
+# from base.env.pre_process_setting import analysis
+
+import base.env.pre_process as pre_process
+from helper.util import get_attribute
+
 
 class Market(object):
 
     Running = 0
     Done = -1
+
+    class Source(Enum):
+        CSV = 'CSV'
+        MONGODB = 'MongoDB'
 
     def __init__(self, codes, start_date="2008-01-01", end_date="2018-01-01", **options):
 
@@ -29,6 +39,9 @@ class Market(object):
         # Initialize data frames.
         self.origin_frames = dict()
         self.scaled_frames = dict()
+
+        # added by steven, origin_frames plus indicators calculatd in fly
+        self.post_frames = dict()
 
         # Initialize scaled  data x, y.
         self.data_x = None
