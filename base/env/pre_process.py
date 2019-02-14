@@ -60,7 +60,7 @@ class PostAnalyze(Action):
 
     @staticmethod
     @abstractmethod
-    def fire(data_frame):
+    def fire(self, data_frame):
         raise NotImplementedError
         # print("this is PostAnalyze")
 
