@@ -8,6 +8,7 @@ from tensorflow.contrib import rnn
 from helper.data_logger import generate_algorithm_logger
 import math
 
+
 class BaseTFModel(object):
 
     def __init__(self, session, env, **options):
@@ -96,9 +97,26 @@ class BaseTFModel(object):
         pass
 
     @staticmethod
-    def add_rnn(layer_count, hidden_size, cell=rnn.BasicLSTMCell, activation=tf.tanh):
-        cells = [cell(hidden_size, activation=activation) for _ in range(layer_count)]
+    def add_rnn(layer_count, hidden_size, keep_prob=1, cell=rnn.BasicLSTMCell, activation=tf.tanh):
+
+        def _create_one_cell(cell, hidden_size, activation, keep_prob):
+            rnn_cell = cell(hidden_size, activation=activation)
+            if keep_prob != 1:
+                rnn_cell = tf.contrib.rnn.DropoutWrapper(rnn_cell, output_keep_prob=keep_prob)
+            return rnn_cell
+
+        cells = [_create_one_cell(cell, hidden_size, activation, keep_prob) for _ in range(layer_count)]
         return rnn.MultiRNNCell(cells)
+
+    # @staticmethod
+    # def add_rnn(layer_count, hidden_size, cell=rnn.BasicLSTMCell, activation=tf.tanh):
+    #     cells = [cell(hidden_size, activation=activation) for _ in range(layer_count)]
+    #     return rnn.MultiRNNCell(cells)
+
+    def _create_one_cell(cell, hidden_size, activation, keep_prob):
+        rnn_cell = cell(hidden_size, activation=activation, output_keep_prob=keep_prob)
+        rnn_cell = tf.contrib.rnn.DropoutWrapper(rnn_cell, output_keep_prob=keep_prob)
+        return rnn_cell
 
     @staticmethod
     def add_cnn(x_input, filters, kernel_size, pooling_size):

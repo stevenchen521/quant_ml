@@ -24,3 +24,7 @@ model_launcher_parser.add_argument("--market", default="stock")
 model_launcher_parser.add_argument("--episode", default=500, type=int)
 model_launcher_parser.add_argument("--train_steps", default=100000, type=int)
 model_launcher_parser.add_argument("--training_data_ratio", default=0.8, type=float)
+
+
+# if __name__ == '__main__':
+    # print()

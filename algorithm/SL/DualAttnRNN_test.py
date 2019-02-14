@@ -116,7 +116,7 @@ def main(args):
     training_data_ratio = args.training_data_ratio
 
     env = Market_folk(codes, start_date="2008-01-01", end_date="2018-01-01", **{
-        "seq_length": 30,
+        "seq_length": 5,
         "market": market,
         "use_sequence": True,
         "scaler": StandardScaler,
@@ -128,7 +128,7 @@ def main(args):
 
     algorithm = Algorithm(tf.Session(config=config), env, env.seq_length, env.data_dim, env.code_count, **{
         "mode": mode,
-        "hidden_size": 30,
+        "hidden_size": 32,
         "enable_saver": True,
         "train_steps": train_steps,
         "enable_summary_writer": True,

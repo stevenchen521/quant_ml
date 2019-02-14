@@ -19,8 +19,12 @@ class Algorithm(BaseSLTFModel):
 
         try:
             self.hidden_size = options['hidden_size']
+            self.layer_size = options['layer_size']
+            self.keep_prob = options['keep_prob']
         except KeyError:
             self.hidden_size = 1
+            self.layer_size = 1
+            self.keep_prob = 1
 
         self._init_input()
         self._init_nn()
@@ -35,13 +39,13 @@ class Algorithm(BaseSLTFModel):
     def _init_nn(self):
         # First Attn
         with tf.variable_scope("1st_encoder"):
-            self.f_encoder_rnn = self.add_rnn(1, self.hidden_size)
+            self.f_encoder_rnn = self.add_rnn(self.layer_size, self.hidden_size, self.keep_prob)
             self.f_encoder_outputs, _ = tf.nn.dynamic_rnn(self.f_encoder_rnn, self.x, dtype=tf.float32)
             self.f_attn_inputs = self.add_fc(self.f_encoder_outputs, self.hidden_size, tf.tanh)
             self.f_attn_outputs = tf.nn.softmax(self.f_attn_inputs)
         with tf.variable_scope("1st_decoder"):
             self.f_decoder_input = tf.multiply(self.f_encoder_outputs, self.f_attn_outputs)
-            self.f_decoder_rnn = self.add_rnn(1, self.hidden_size)
+            self.f_decoder_rnn = self.add_rnn(self.layer_size, self.hidden_size, self.keep_prob)
             self.f_decoder_outputs, _ = tf.nn.dynamic_rnn(self.f_decoder_rnn, self.f_decoder_input, dtype=tf.float32)
         # Second Attn
         with tf.variable_scope("2nd_encoder"):
@@ -49,7 +53,7 @@ class Algorithm(BaseSLTFModel):
             self.s_attn_outputs = tf.nn.softmax(self.s_attn_input)
         with tf.variable_scope("2nd_decoder"):
             self.s_decoder_input = tf.multiply(self.f_decoder_outputs, self.s_attn_outputs)
-            self.s_decoder_rnn = self.add_rnn(1, self.hidden_size)
+            self.s_decoder_rnn = self.add_rnn(self.layer_size, self.hidden_size, self.keep_prob)
             self.f_decoder_outputs, _ = tf.nn.dynamic_rnn(self.s_decoder_rnn, self.s_decoder_input, dtype=tf.float32)
             self.f_decoder_outputs_dense = self.add_fc(self.f_decoder_outputs[:, -1], 16)
             self.y = self.add_fc(self.f_decoder_outputs_dense, self.y_space)
@@ -80,7 +84,7 @@ class Algorithm(BaseSLTFModel):
 def main(args):
     mode = args.mode
     # mode = "test"
-    codes = ["600036"]
+    codes = ["nasdaq"]
     # codes = ["600036", "601998"]
     # codes = args.codes
     # codes = ["AU88", "RB88", "CU88", "AL88"]
@@ -91,10 +95,10 @@ def main(args):
     # training_data_ratio = 0.98
     training_data_ratio = args.training_data_ratio
 
-    env = Market(codes, start_date="2008-01-01", end_date="2018-01-01", **{
+    env = Market(codes, start_date="2008-01-01", end_date="2019-02-01", **{
         "market": market,
         "use_sequence": True,
-        "scaler": MinMaxScaler,
+        "scaler": MinMaxScaler(feature_range=(0, 1)),
         "mix_index_state": True,
         "training_data_ratio": training_data_ratio,
     })
@@ -103,7 +107,9 @@ def main(args):
 
     algorithm = Algorithm(tf.Session(config=config), env, env.seq_length, env.data_dim, env.code_count, **{
         "mode": mode,
-        "hidden_size": 30,
+        "layer_size": 1,
+        "hidden_size": 32,
+        "keep_prob": 1,   # drop out size = 1 - keep_prob
         "enable_saver": True,
         "train_steps": train_steps,
         "enable_summary_writer": True,

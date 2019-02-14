@@ -8,11 +8,21 @@ from base.env.trader import Trader
 from base.model.document import Stock, Future
 from sklearn.preprocessing import StandardScaler
 
+from enum import Enum
+# from base.env.pre_process_setting import analysis
+
+import base.env.pre_process as pre_process
+from helper.util import get_attribute
+
 
 class Market(object):
 
     Running = 0
     Done = -1
+
+    class Source(Enum):
+        CSV = 'CSV'
+        MONGODB = 'MongoDB'
 
     def __init__(self, codes, start_date="2008-01-01", end_date="2018-01-01", **options):
 
@@ -29,6 +39,9 @@ class Market(object):
         # Initialize data frames.
         self.origin_frames = dict()
         self.scaled_frames = dict()
+
+        # added by steven, origin_frames plus indicators calculatd in fly
+        self.post_frames = dict()
 
         # Initialize scaled  data x, y.
         self.data_x = None
@@ -104,10 +117,10 @@ class Market(object):
         try:
             scaler = options['scaler']
         except KeyError:
-            scaler = StandardScaler
+            scaler = StandardScaler()
         self.state_codes = self.codes
         # self.state_codes = self.codes + self.index_codes
-        self.scaler = [scaler() for _ in self.state_codes]
+        self.scaler = [scaler for _ in self.state_codes]
         self.trader = Trader(self, cash=self.init_cash)
         self.doc_class = Stock if self.m_type == 'stock' else Future
 
@@ -123,40 +136,12 @@ class Market(object):
             if not self.doc_class.exist_in_db(code):
                 raise ValueError("Code: {} not exists in database.".format(code))
 
-    def _init_data_frames(self, start_date, end_date):
-        # Remove invalid codes first.
-        self._validate_codes()
-        # Init columns and data set.
-        columns, dates_set = ['open', 'high', 'low', 'close', 'volume'], set()
-        # Load data.
-        for index, code in enumerate(self.state_codes):
-            # Load instrument docs by code.
-            instrument_docs = self.doc_class.get_k_data(code, start_date, end_date)
-            # Init instrument dicts.
-            instrument_dicts = [instrument.to_dic() for instrument in instrument_docs]
-            # Split dates.
-            dates = [instrument[1] for instrument in instrument_dicts]
-            # Split instruments.
-            instruments = [instrument[2:] for instrument in instrument_dicts]
-            # Update dates set.
-            dates_set = dates_set.union(dates)
-            # Build origin and scaled frames.
-            scaler = self.scaler[index]
-            scaler.fit(instruments)
-            instruments_scaled = scaler.transform(instruments)
-            origin_frame = pd.DataFrame(data=instruments, index=dates, columns=columns)
-            scaled_frame = pd.DataFrame(data=instruments_scaled, index=dates, columns=columns)
-            # Build code - frame map.
-            self.origin_frames[code] = origin_frame
-            self.scaled_frames[code] = scaled_frame
-        # Init date iter.
-        self.dates = sorted(list(dates_set))
-        # Rebuild index.
-        for code in self.state_codes:
-            origin_frame = self.origin_frames[code]
-            scaled_frame = self.scaled_frames[code]
-            self.origin_frames[code] = origin_frame.reindex(self.dates, method='bfill')
-            self.scaled_frames[code] = scaled_frame.reindex(self.dates, method='bfill')
+    def _init_data_frames(self, start_date, end_date, source=Source.CSV.value):
+
+        action_fetch, action_pre_analyze, action_analyze, action_post_analyze = pre_process.get_active_strategy()
+        self.dates, self.scaled_frames = pre_process.ProcessStrategy(action_fetch, action_pre_analyze, action_analyze,
+                                                         action_post_analyze,
+                                                         self.state_codes, start_date, end_date, self.scaler[0]).process()
 
     def _init_env_data(self):
         if not self.use_sequence:
@@ -348,51 +333,3 @@ class Market(object):
             if self.mix_trader_state:
                 data_dim += (2 + self.code_count)
         return data_dim
-
-
-class Market_folk(Market):
-    def __init__(self, codes, start_date="2008-01-01", end_date="2018-01-01", **options):
-        super(Market_folk, self).__init__(codes, start_date="2008-01-01", end_date="2018-01-01", **options)
-
-
-    def _init_data_frames(self, start_date, end_date):
-        # Remove invalid codes first.
-        self._validate_codes()
-        # Init columns and data set.
-        columns, dates_set = ['open', 'high', 'low', 'close', 'volume'], set()
-        # Load data.
-        for index, code in enumerate(self.state_codes):
-            # Load instrument docs by code.
-            instrument_docs = self.doc_class.get_k_data(code, start_date, end_date)
-            # Init instrument dicts.
-            instrument_dicts = [instrument.to_dic() for instrument in instrument_docs]
-            # Split dates.
-            dates = [instrument[1] for instrument in instrument_dicts]
-            # Split instruments.
-            instruments = [instrument[2:] for instrument in instrument_dicts]
-            # Update dates set.
-            dates_set = dates_set.union(dates)
-            # Build origin and scaled frames.
-            scaler = self.scaler[index]
-            # scaler.fit(instruments)
-            # instruments_scaled = scaler.transform(instruments)
-            origin_frame_pre = pd.DataFrame(data=instruments, index=dates, columns=columns)
-            origin_frame = origin_frame_pre.copy()
-            origin_frame['close'] = origin_frame['close'].pct_change()
-            origin_frame = origin_frame[1:]
-            scaled_dict = scaler.fit_transform(origin_frame)
-            scaled_frame = pd.DataFrame(scaled_dict, columns=origin_frame.columns, index= origin_frame.index)
-            # scaled_frame = pd.DataFrame(data=instruments_scaled, index=dates, columns=columns)
-            # Build code - frame map.
-            self.origin_frames[code] = origin_frame
-            self.scaled_frames[code] = scaled_frame
-        # Init date iter.
-        self.dates = sorted(list(dates_set))
-        self.dates = self.dates[1:]
-        # Rebuild index.
-        for code in self.state_codes:
-            origin_frame = self.origin_frames[code]
-            scaled_frame = self.scaled_frames[code]
-            self.origin_frames[code] = origin_frame.reindex(self.dates, method='bfill')
-            self.scaled_frames[code] = scaled_frame.reindex(self.dates, method='bfill')
-
