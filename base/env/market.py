@@ -495,7 +495,7 @@ class Market_folk_pre_5Dre(Market):
             # Update dates set.
             dates_set = dates_set.union(dates)
             # Build origin and scaled frames.
-            scaler = self.scaler[index]
+            scaler = self.scaler[index]()
             # scaler.fit(instruments)
             # instruments_scaled = scaler.transform(instruments)
             origin_frame_pre = pd.DataFrame(data=instruments, index=dates, columns=columns)

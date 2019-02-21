@@ -11,7 +11,7 @@ from functools import reduce
 from base.algorithm.model import BaseSLTFModel
 
 class BaseSLTFModel_folk_pre_1Dre_raw_return(BaseSLTFModel):
-    def __init__(self,session, env, **options):
+    def __init__(self, session, env, **options):
         super(BaseSLTFModel_folk_pre_1Dre_raw_return, self).__init__(session, env, **options)
 
     def eval_and_plot(self):
