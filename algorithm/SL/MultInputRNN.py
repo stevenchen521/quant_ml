@@ -19,6 +19,8 @@ from tensorflow.python.ops import array_ops, nn_ops, init_ops
 from tensorflow.python.ops.rnn_cell_impl import LSTMStateTuple
 from tensorflow.python.ops import math_ops
 
+import numpy as np
+
 _BIAS_VARIABLE_NAME = "mi_bias"
 _WEIGHTS_VARIABLE_NAME = "mi_kernel"
 
@@ -51,10 +53,11 @@ class Algorithm(BaseSLTFModel):
         p is the number of the MI-LSTM hidden units
     """
 
-    def __init__(self, session, env, seq_length, x_space, y_space, **options):
+    def __init__(self, session, env, seq_length, x_space, x_divider, y_space, initializer=tf.random_normal_initializer(stddev=0.1),
+                 **options):
         super(Algorithm, self).__init__(session, env, **options)
 
-        self.seq_length, self.x_space, self.y_space = seq_length, x_space, y_space
+        self.seq_length, self.x_space, self.x_divider, self.y_space = seq_length, x_space, x_divider, y_space
 
         try:
             self.hidden_size = options['hidden_size']
@@ -66,12 +69,12 @@ class Algorithm(BaseSLTFModel):
             self.keep_prob = 1
 
         # tf.Variable(10, name=_WEIGHT_FINAL_ATTN)
-        self._w_f_attn = tf.get_variable(_WEIGHT_FINAL_ATTN, [self.hidden_size, self.hidden_size], initializer=self.init)
-        self._b_f_attn = tf.get_variable(_BIAS_FINAL_ATTN, [self.hidden_size], initializer=self.init)
-        self._v_f_attn = tf.get_variable(_VECTOR_FINAL_ATTN, [self.hidden_size], initializer=self.init)
+        self._w_f_attn = tf.get_variable(_WEIGHT_FINAL_ATTN, [self.hidden_size, self.hidden_size], initializer=initializer)
+        self._b_f_attn = tf.get_variable(_BIAS_FINAL_ATTN, [self.hidden_size], initializer=initializer)
+        self._v_f_attn = tf.get_variable(_VECTOR_FINAL_ATTN, [self.hidden_size,1], initializer=initializer)
 
-        self._w_activation = tf.get_variable(_WEIGHT_ACTIVATION, [self.hidden_size], initializer=self.init)
-        self._b_activation = tf.get_variable(_BIAS_ACTIVATION, [self.hidden_size], initializer=self.init)
+        self._w_activation = tf.get_variable(_WEIGHT_ACTIVATION, [1, self.hidden_size], initializer=initializer)
+        self._b_activation = tf.get_variable(_BIAS_ACTIVATION, [1], initializer=initializer)
 
         self._init_input()
         self._init_nn()
@@ -81,54 +84,43 @@ class Algorithm(BaseSLTFModel):
 
     def _init_input(self):
 
-        self._factor_price, self._factor_pos, self._factor_neg, self._factor_idx = self._split_input()
-
         self.x = tf.placeholder(tf.float32, [None, self.seq_length, self.x_space])
         self.label = tf.placeholder(tf.float32, [None, self.y_space])
 
 
     def _init_nn(self):
 
-        reduce_mean = tf.math.reduce_mean
+        # split the input based on divider
+        x_splits = tf.split(self.x, self.x_divider, 2)
 
-        def split_ouput(ori_output):
-            # TODO
-            return None
+        # LSTM layer, share the variants(weights and bias)
+        with tf.variable_scope("LSTM_layer", reuse=tf.AUTO_REUSE):
 
-        # First Attn
-        with tf.variable_scope("LSTM_layer"):
-            # # self price
-            # cell_factor_price = self.add_rnn(self.layer_size, self.hidden_size, self.keep_prob)
-            # self.out_factor_price, _ = tf.nn.dynamic_rnn(cell_factor_price, self._factor_price, dtype=tf.float32)
-            #
-            # # positive factors
-            # cell_factor_pos = self.add_rnn(self.layer_size, self.hidden_size, self.keep_prob)
-            # self.out_factor_pos, _ = tf.nn.dynamic_rnn(cell_factor_pos, self._factor_pos, dtype=tf.float32)
-            #
-            # # negative factors
-            # cell_factor_neg = self.add_rnn(self.layer_size, self.hidden_size, self.keep_prob)
-            # self.out_factor_price, _ = tf.nn.dynamic_rnn(cell_factor_neg, self._factor_neg, dtype=tf.float32)
-            #
-            # # index
-            # cell_factor_index = self.add_rnn(self.layer_size, self.hidden_size, self.keep_prob)
-            # self.out_factor_price, _ = tf.nn.dynamic_rnn(cell_factor_index, self._factor_idx, dtype=tf.float32)
+            # out put of LSTM layer.
+            out_lstm_layer = [None] * len(x_splits)
 
-            rnn_cells = self.add_rnn(self.layer_size, self.hidden_size, self.keep_prob)
+            for idx_1st, part_1st in enumerate(x_splits):
+                split_s = tf.split(part_1st, tf.ones(part_1st.shape[2], dtype='int32'), 2)
 
-            # out_all, shape = (batch_size, seq_length, cell.output_size)
-            out_all, _ = tf.nn.dynamic_rnn(rnn_cells, self.x, dtype=tf.float32)
+                # expand dimension for the reduce mean later
+                out_cell_part_2nd = None
 
-            # each of the following, shape = (batch_size, seq_length, dimensions)
-            # for price and index, the dimension is the hidden_size
-            # for positive and negative factors, the dimensions are (P/N, hidden_size)
-            out_price, out_pos, out_neg, out_index = self.split_ouput(out_all)
+                for idx_2nd, part_2nd in enumerate(split_s):
 
-            # we do the average of the positive and negative factors
-            out_pos_avg = reduce_mean(out_pos)  # shape = (batch_size, seq_length, q)
-            out_neg_avg = reduce_mean(out_neg)  # shape = (batch_size, seq_length, q)
+                    cell_part_2nd = self.add_rnn(1, self.hidden_size, self.keep_prob)
+                    out_cell, _ = tf.nn.dynamic_rnn(cell_part_2nd, part_2nd,
+                                                                 dtype=tf.float32)
+
+                    if idx_2nd == 0:
+                        out_cell_part_2nd = tf.expand_dims(out_cell, 0)
+                    else:
+                        out_cell = tf.expand_dims(out_cell, 0)
+                        out_cell_part_2nd = tf.concat([out_cell_part_2nd, out_cell], 0)
+
+                out_lstm_layer[idx_1st] = tf.reduce_mean(out_cell_part_2nd, 0)
 
         with tf.variable_scope("MI_RNN_layer"):
-            mi_rnn_input = concat([out_price, out_pos_avg, out_neg_avg, out_index], 2) #TODO check ths behavior
+            mi_rnn_input = concat(out_lstm_layer, 2)
 
             rnn_mi_cells = self.add_rnn(self.layer_size, self.hidden_size, self.keep_prob, MultiInputLSTMCell)
 
@@ -136,15 +128,43 @@ class Algorithm(BaseSLTFModel):
             out_mi, _ = tf.nn.dynamic_rnn(rnn_mi_cells, mi_rnn_input, dtype=tf.float32)
 
         with tf.variable_scope("final_attn"):
-            j = matmul(a=self._w_f_attn,b=out_mi,transpose_b=True)
-            j = matmul(a=self._v_f_attn,b=j,transpose_a=True)
+            # output of multi input cell, shape (?, seq, p)
+            # tf.scan(lambda a, x: tf.matmul(a=self._w_f_attn, b=x, transpose_b=True), out_mi)
 
-            beta = tf.nn.softmax(j, axis=1)
-            y_tilde = matmul(a=beta, b=out_mi, transpose_a=True)
+            j = tf.scan(lambda a, x: tf.matmul(a=x, b=self._w_f_attn), out_mi)  # shape (?, seq, p)
+
+            # add bias TODO check the behavior of bias_add in two dimension case
+            j = tf.scan(lambda a, x: nn_ops.bias_add(x, self._b_f_attn), j)  # shape (?, seq, p)
+
+            scan_init = tf.constant(np.zeros((j.shape[1], self._v_f_attn.shape[1])), dtype=tf.float32)
+            # finally the shape of j is (?, seq, 1)
+            j = tf.scan(lambda a, x: matmul(tanh(x), self._v_f_attn), j, initializer=scan_init)
+
+            # beta = tf.nn.softmax(j, axis=1)
+            # beta = tf.reshape(beta, [beta.shape[1], beta.shape[2]])
+
+            beta = tf.scan(lambda a, x: tf.nn.softmax(x, axis=1), j)
+
+
+            # tf.scan(lambda a, x: tf.nn.softmax(x, axis=1), j)
+
+            # shape of beta: (?,seq_step,1)
+            # shape of out_mi: (?,seq_step, p)
+            scan_init = tf.constant(np.zeros((beta.shape[2], out_mi.shape[2])), dtype=tf.float32)
+            def f(a, x):
+                (out_mi_x, beta_x) = x
+                return matmul(a=beta_x, b=out_mi_x, transpose_a=True)
+
+            y_tilde = tf.scan(f, (out_mi, beta) , initializer=scan_init)
 
         with tf.variable_scope("activation"):
 
-            act_input = nn_ops.bias_add(matmul(self._w_activation,y_tilde), self._b_activation)
+            scan_init = tf.constant(np.zeros((1, 1)), dtype=tf.float32)
+            act_input = tf.scan(lambda a, x: matmul(a=self._w_activation, b=x, transpose_b=True), y_tilde, initializer=scan_init)
+            act_input = tf.reshape(act_input, [-1, 1])
+
+            act_input = nn_ops.bias_add(act_input, self._b_activation)
+
             self.y = relu(act_input)
 
 
@@ -281,7 +301,8 @@ class MultiInputLSTMCell(BasicLSTMCell):
             u = multiply(   # TODO, check is here correct? element
                 u, pre_cell_state)  # (B,p) * (B, p) = (B, p)
             u = tf.reduce_sum(u, 1)
-            u = tf.reshape(u, [u.shape[0],1])
+            u = tf.expand_dims(u, 1)
+            # u = tf.reshape(u, [u.shape[0], 1])
             u = nn_ops.bias_add(u, b_attn)
             return tanh(u)
 
@@ -393,7 +414,7 @@ def main(args):
 
     model_name = os.path.basename(__file__).split('.')[0]
 
-    algorithm = Algorithm(tf.Session(config=config), env, env.seq_length, env.data_dim, env.code_count, **{
+    algorithm = Algorithm(tf.Session(config=config), env, env.seq_length, env.data_dim, [1, 4, 3, 1], env.code_count, **{
         "mode": mode,
         "layer_size": 1,
         "hidden_size": 32,
