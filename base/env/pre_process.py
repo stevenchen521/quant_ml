@@ -63,7 +63,9 @@ class PostAnalyze(Action):
     def fire(self, data_frame):
         raise NotImplementedError
         # print("this is PostAnalyze")
-        # self._origin_frame.to_csv("../../data/process_data.csv")
+        # for state_code in self._state_codes:
+        #     self._analyze_frames[state_code].to_csv("../../back_testing/data/{}.csv".format(state_code))
+
 
 
 class FetchCSVSingle(Fetch):
@@ -99,6 +101,8 @@ class PostAnalyzeDefault(PostAnalyze):
     def fire(self, analyze_frames):
         # print("this is PostAnalyzeDefault")
         scales = self._scaler
+        for state_code in self._state_codes:
+            self._analyze_frames[state_code].to_csv("../../back_testing/data/{}.csv".format(state_code))
         post_frame = analyze_frames[self._state_code].copy()
         scales.fit(post_frame)
         instruments_scaled = scales.transform(post_frame)

@@ -4,7 +4,7 @@ import logging
 import os
 
 from algorithm import config
-from base.env.market import Market_folk
+from base.env.market import Market
 from checkpoints import CHECKPOINTS_DIR
 from base.algorithm.model import BaseSLTFModel
 from sklearn.preprocessing import MinMaxScaler, StandardScaler
@@ -115,7 +115,7 @@ def main(args):
     # training_data_ratio = 0.98
     training_data_ratio = args.training_data_ratio
 
-    env = Market_folk(codes, start_date="2008-01-01", end_date="2018-01-01", **{
+    env = Market(codes, start_date="2008-01-01", end_date="2018-01-01", **{
         "seq_length": 5,
         "market": market,
         "use_sequence": True,

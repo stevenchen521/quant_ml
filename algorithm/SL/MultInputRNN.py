@@ -10,7 +10,6 @@ from base.algorithm.model import BaseSLTFModel
 from sklearn.preprocessing import MinMaxScaler
 from helper.args_parser import model_launcher_parser
 
-
 from tensorflow.python.framework import constant_op
 from tensorflow.python.framework import dtypes
 from tensorflow.contrib.rnn import BasicLSTMCell, RNNCell, MultiRNNCell
