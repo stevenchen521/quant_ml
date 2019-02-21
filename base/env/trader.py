@@ -1,7 +1,5 @@
 # coding=utf-8
-
 import math
-
 from time import time
 from enum import Enum
 from base.env.position import Position

@@ -63,6 +63,9 @@ class PostAnalyze(Action):
     def fire(self, data_frame):
         raise NotImplementedError
         # print("this is PostAnalyze")
+        # for state_code in self._state_codes:
+        #     self._analyze_frames[state_code].to_csv("../../back_testing/data/{}.csv".format(state_code))
+
 
 
 class FetchCSVSingle(Fetch):
@@ -98,6 +101,8 @@ class PostAnalyzeDefault(PostAnalyze):
     def fire(self, analyze_frames):
         # print("this is PostAnalyzeDefault")
         scales = self._scaler
+        for state_code in self._state_codes:
+            self._analyze_frames[state_code].to_csv("../../back_testing/data/{}.csv".format(state_code))
         post_frame = analyze_frames[self._state_code].copy()
         scales.fit(post_frame)
         instruments_scaled = scales.transform(post_frame)
@@ -276,7 +281,8 @@ class IndicatorAnalysis:
                     elif last_trend == TREND_UP:
                         result[curr_idx] = calculate_up_trend(val, target[curr_idx: curr_idx + future_bars])
 
-        return pd.DataFrame(result, columns=['trend_{}'.format(para[1:4])])
+        return pd.DataFrame(result).rename(columns={'close': 'trend_{}'.format(para[1:4])})
+        # return pd.DataFrame(result, columns=['trend_{}'.format(para[1:4])])
 
 
     @catch_exception(LOGGER)
@@ -332,3 +338,7 @@ class IndicatorAnalysis:
         ds_cls = get_attribute(
             inspect.__package__ + inspect.getmodulename(__file__) + '.{}'.format(self.__class__.__name__))
         return ds_cls
+
+if __name__ == '__main__':
+    IndicatorAnalysis1 = IndicatorAnalysis()
+    IndicatorAnalysis1.trend()
