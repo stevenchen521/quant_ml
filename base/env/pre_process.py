@@ -101,8 +101,8 @@ class PostAnalyzeDefault(PostAnalyze):
     def fire(self, analyze_frames):
         # print("this is PostAnalyzeDefault")
         scales = self._scaler
-        for state_code in self._state_codes:
-            self._analyze_frames[state_code].to_csv("../../back_testing/data/{}.csv".format(state_code))
+        # for state_code in self._state_codes:
+        #     self._analyze_frames[state_code].to_csv("../../back_testing/data/{}.csv".format(state_code))
         post_frame = analyze_frames[self._state_code].copy()
         scales.fit(post_frame)
         instruments_scaled = scales.transform(post_frame)
@@ -167,7 +167,7 @@ class ProcessStrategy(object):
         self._analyze.fire(self, self._pre_frames)
         self._post_analyze.fire(self, self._analyze_frames)
 
-        return self._dates, self._post_frames
+        return self._dates, self._post_frames, self._origin_frames, self._post_frames
 
 
 class IndicatorAnalysis:

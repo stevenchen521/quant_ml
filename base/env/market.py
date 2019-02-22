@@ -24,7 +24,7 @@ class Market(object):
         CSV = 'CSV'
         MONGODB = 'MongoDB'
 
-    def __init__(self, codes, start_date="2008-01-01", end_date="2018-01-01", **options):
+    def __init__(self, codes, start_date="2008-01-01", end_date="2018-01-01", col_y = "close" ,**options):
 
         # Initialize codes.
         self.codes = codes
@@ -118,6 +118,7 @@ class Market(object):
             scaler = options['scaler']
         except KeyError:
             scaler = StandardScaler()
+
         self.state_codes = self.codes
         # self.state_codes = self.codes + self.index_codes
         self.scaler = [scaler for _ in self.state_codes]
@@ -139,9 +140,9 @@ class Market(object):
     def _init_data_frames(self, start_date, end_date, source=Source.CSV.value):
 
         action_fetch, action_pre_analyze, action_analyze, action_post_analyze = pre_process.get_active_strategy()
-        self.dates, self.scaled_frames = pre_process.ProcessStrategy(action_fetch, action_pre_analyze, action_analyze,
-                                                         action_post_analyze,
-                                                         self.state_codes, start_date, end_date, self.scaler[0]).process()
+        self.dates, self.scaled_frames, self.origin_frames, self.post_frames = \
+            pre_process.ProcessStrategy(action_fetch, action_pre_analyze, action_analyze,action_post_analyze,
+                                        self.state_codes, start_date, end_date, self.scaler[0]).process()
 
     def _init_env_data(self):
         if not self.use_sequence:
@@ -193,10 +194,10 @@ class Market(object):
                 if index < date_index - 1:
                     if date_index < self.bound_index:
                         # Get y, y is not at date index, but plus 1. (Training Set)
-                        instruments_y = scaled_frame.iloc[date_index + 1]['close']
+                        instruments_y = scaled_frame.iloc[date_index + 1]["trend_['15', '5', '3']"]
                     else:
                         # Get y, y is at date index. (Test Set)
-                        instruments_y = scaled_frame.iloc[date_index + 1]['close']
+                        instruments_y = scaled_frame.iloc[date_index + 1]["trend_['15', '5', '3']"]
                     data_y.append(np.array(instruments_y))
             # Convert list to array.
             data_x = np.array(data_x)

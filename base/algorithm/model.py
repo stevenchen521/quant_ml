@@ -1,4 +1,5 @@
 import tensorflow as tf
+import pandas as pd
 import numpy as np
 import json
 
@@ -282,6 +283,27 @@ class BaseSLTFModel(BaseTFModel):
                                       y,
                                       label,
                                       self.save_path)
+
+    def eval_and_plot_nasdaq_backtest(self):
+        x, label = self.env.get_test_data()
+        y = self.predict(x)
+        with open(self.save_path + '_y.json', mode='w') as fp:
+            json.dump(y.tolist(), fp, indent=True)
+
+        with open(self.save_path + '_label.json', mode='w') as fp:
+            json.dump(label.tolist(), fp, indent=True)
+        data_ploter.plot_stock_series(self.env.codes,
+                                      y,
+                                      label,
+                                      self.save_path)
+        date_index = self.env.dates[self.env.e_data_indices[0] + self.env.seq_length: -1]
+        dataframe_backtest = pd.DataFrame({'Tri': label.flatten(),
+                                           'OTri': y.flatten()}, index = date_index)
+        original_frames = self.env.post_frames[self.env.codes[0]][self.env.e_data_indices[0] + self.env.seq_length: -1]
+        dataframe_backtest = pd.concat([dataframe_backtest, original_frames], axis=1)
+        dataframe_backtest.to_csv("../../back_testing/data/nasdaq_for_backtest.csv")
+
+
     # customize function
     def eval_and_plot_pre_1Dre(self):
         def _to_price(list, mean, std, first_close):
