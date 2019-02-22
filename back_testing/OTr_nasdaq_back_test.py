@@ -61,16 +61,6 @@ class MyStrategy(bt.Strategy):
         # Attention: broker could reject order if not enough cash
         if order.status in [order.Completed]:
             if order.isbuy():
-                # stop_loss = order.executed.price * (1.0 - (self.p.stoploss))
-                # take_profit = order.executed.price * (1.0 + self.p.takeprofit)
-                # sl_ord = self.sell(exectype=bt.Order.Stop,
-                #                    price=stop_loss)
-                # sl_ord.addinfo(name="Stop")
-                # tkp_ord = self.sell(exectype=bt.Order.Limit,
-                #                     price=take_profit)
-                # tkp_ord.addinfo(name="Prof")
-                # self.order_dict[sl_ord.ref] = tkp_ord
-                # self.order_dict[tkp_ord.ref] = sl_ord
                 self.buyprice = order.executed.price
                 self.buycomm = order.executed.comm
                 # self.log('BUY CREATE, %.2f' % self.order.executed.price + 'tp: %.2f' % self.data.tp_score[0])
@@ -101,33 +91,22 @@ class MyStrategy(bt.Strategy):
         if self.datetime.datetime(ago=0) > datetime.datetime(2016, 11, 18):
             if not self.position: # not in the market
                 # Not yet ... we MIGHT BUY if ...
-                if (self.data.tp_score[0] > self.p.trade_para[0] + 0.5) and (self.data.tp_score[-1] < self.p.trade_para[0] - 0.5):
+                if (self.data.OTri[0] > 0.5) and (self.data.OTri[-1] < 0.5):
                     # amount_to_invest = (self.p.order_pct * self.broker.cash)
                     # self.size = int(amount_to_invest / self.data.close)
-                    self.order = self.buy(size=1000)
+                    self.order = self.buy(size=100)
                     # self.close_type = "None"
-                    self.pstop = self.data.close[0] * (1-self.p.stoploss)
-                    self.pstop_closeprice = self.data.close[0]
 
 ## the most import part of rolling stop loss
 ## compare current close price with the stored one, if current one is greater , replace the stored one
 
-            if self.position.size > 0:
-                pclose = self.data.close[0]
-                if pclose > self.pstop_closeprice:
-                    self.pstop_closeprice = pclose
-                    self.pstop = self.pstop_closeprice * (1 - self.p.stoploss)
-                else:
-                    pass
-                if pclose < self.pstop:
-                    # print (pclose, pstop)
-                    self.order = self.sell(size=1000)  #### add a order type
-                    self.close_type = "Stop_loss"
+            if self.position:  # in the market
+                # Not yet ... we will sell if ...
+                if (self.data.OTri[0] < 0.5) and (self.data.OTri[-1] > 0.5):
+                    # amount_to_invest = (self.p.order_pct * self.broker.cash)
+                    # self.size = int(amount_to_invest / self.data.close)
+                    self.order = self.sell(size=100)
 
-                elif (self.data.tp_score[0] < self.p.trade_para[0] + self.p.trade_para[1] - 0.5) and \
-                        (self.data.tp_score[-1] > self.p.trade_para[0] + self.p.trade_para[1] + 0.5):
-                    self.order = self.sell(size=1000)
-                    self.close_type = "Normal_close"
                 else:
                     pass
             else:
@@ -147,9 +126,7 @@ class MyStrategy(bt.Strategy):
 
     def stop(self):
         pnl = round(self.broker.getvalue() - self.startcash, 2)
-        print('Tp_xu: {}; Tp_xd: {}; stop_loss: {},  Final PnL: {}'.format(self.p.trade_para[0], self.p.trade_para[0] +
-                                                                           self.p.trade_para[1], self.p.stoploss, pnl))
-        # df_all.append(self.df)
+        print('Final PnL: {}'.format(self.p.stoploss, pnl))
 
 
 def cal_std_from_returns(df, Buy_date, Sell_date):
@@ -159,6 +136,7 @@ def cal_std_from_returns(df, Buy_date, Sell_date):
     except Exception:
         std = np.nan
     return std
+
 
 def summary(detail_df, groupby_list):
     value_list = []
@@ -285,84 +263,44 @@ def runstarts():
     from os.path import isfile, join
     import sys
     mypath = os.path.dirname(sys.modules['__main__'].__file__)
-    data_path = mypath + "/data/factor_analysis_tp_portfolio"
-    summary_path = mypath + "/summary_excel.xlsx"
-    ticker_list = [f.replace('.csv', '') for f in listdir(data_path) if isfile(join(data_path, f))]
-    ticker_list = [x.upper() for x in ticker_list]
+    file_name = "nasdaq_for_backtest_processed"
+    data_path = mypath + "/data/{}.csv".format(file_name)
+    summary_path = mypath + "/summary_excel/{}_summary.xlsx".format(file_name)
     df_summary = pd.DataFrame()
-    count = 0
-    part = 1
-    start_time = datetime.datetime.now()
-    for ticker in ticker_list:
-        ## release the memory
-        results = ''
-        start_time = datetime.datetime.now()
-        ticker_data_path = data_path +'\\{}.csv'.format(ticker)
-        count = count+1
-        commission = 0.002
-        cerebro = Cerebro(maxcpus=2)
-        # Add a strategy
-        para_combine = [[10, 10], [10, 20], [10, 30]]
-        stop_loss = [0.6, 0.8, 1.0]
-        cerebro.optstrategy(MyStrategy, trade_para=para_combine, stoploss=stop_loss)
-        df = pd.read_csv(ticker_data_path, parse_dates=True)
-        if len(df) < 1250:
-            continue
-        else:
-            pass
-        df['Date'] = pd.to_datetime(df['Date'])
-        data = GenericCSV_vp(dataname=ticker_data_path,)
-        # Add the Data Feed to Cerebro
-        cerebro.adddata(data, name=ticker)
-        # cerebro.addanalyzer(bt.analyzers.PyFolio)
-        cerebro.addanalyzer(bt.analyzers.TradeAnalyzer)
-        cerebro.addanalyzer(Transactions)
-        cerebro.broker.setcash(1000000)
-        # cerebro.addsizer(bt.sizers.FixedSize, stake=10000)
-        # Set the commission
-        cerebro.broker.setcommission(commission=commission)
-        results = cerebro.run()
-        detail_df = format_transaction_one_factor_tp(results, 0.002, df, ['tp_xu', 'tp_windowing', 'stoploss'])
-        df_summary = df_summary.append(detail_df)
-        #### save excel part
-        if count % 5 == 0:
-            try:
-                book = load_workbook(data_path)
-            except Exception:
-                df_empty = pd.DataFrame()
-                df_empty.to_excel(summary_path)
-                book = load_workbook(summary_path)
-            writer = pd.ExcelWriter(summary_path, engine='openpyxl')
-            writer.book = book
-            df_summary.to_excel(writer, sheet_name='summary_part' + str(part))
-            writer.save()
-            writer.close()
-            df_summary = pd.DataFrame()
-            part = part+1
-        else:
-            pass
-        time_finished = datetime.datetime.now()
-        time_consume = time_finished - start_time
-        print('time_consume for 1 loop: {}'.format(time_consume))
+    ticker_data_path = data_path
+    commission = 0.002
+    cerebro = Cerebro(maxcpus=2)
+    # Add a strategy
+    cerebro.addstrategy(MyStrategy, trade_para=para_combine, stoploss=stop_loss)
+    df = pd.read_csv(ticker_data_path, parse_dates=True)
 
+    df['Date'] = pd.to_datetime(df['Date'])
+    data = GenericCSV_vp(dataname=ticker_data_path,)
+    # Add the Data Feed to Cerebro
+    cerebro.adddata(data, name=file_name)
+    # cerebro.addanalyzer(bt.analyzers.PyFolio)
+    cerebro.addanalyzer(bt.analyzers.TradeAnalyzer)
+    cerebro.addanalyzer(Transactions)
+    cerebro.broker.setcash(1000000)
+    # cerebro.addsizer(bt.sizers.FixedSize, stake=10000)
+    # Set the commission
+    cerebro.broker.setcommission(commission=commission)
+    results = cerebro.run()
 
-        #
-        # path = 'D:/backtest_research/one_factor_tp_portfolio/one_factor_optimize_stop_loss/data_summary2.xlsx'
-        # try:
-        #     book = load_workbook(path)
-        # except Exception:
-        #     df_empty = pd.DataFrame()
-        #     df_empty.to_excel(path)
-        #     book = load_workbook(path)
-        # book = load_workbook(path)
-        # writer = pd.ExcelWriter(path, engine='openpyxl')
-        # writer.book = book
-        # summary_df.to_excel(writer, sheet_name=ticker)
-        # detail_df.to_excel(writer, sheet_name=ticker, startcol=20)
-        # writer.save()
-        # writer.close()
-        # print(ticker + 'is finished')
-
+    detail_df = format_transaction_one_factor_tp(results, 0.002, df, ['tp_xu', 'tp_windowing', 'stoploss'])
+    df_summary = df_summary.append(detail_df)
+    #### save excel part
+    try:
+        book = load_workbook(summary_path)
+    except Exception:
+        df_empty = pd.DataFrame()
+        df_empty.to_excel(summary_path)
+        book = load_workbook(summary_path)
+    writer = pd.ExcelWriter(summary_path, engine='openpyxl')
+    writer.book = book
+    df_summary.to_excel(writer, sheet_name='summary')
+    writer.save()
+    writer.close()
 
 if __name__ == '__main__':
     runstarts()
