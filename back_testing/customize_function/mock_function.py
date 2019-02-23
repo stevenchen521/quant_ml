@@ -6,7 +6,7 @@ from pyfolio.utils import (APPROX_BDAYS_PER_MONTH)
 import backtrader as bt
 # import matplotlib.pyplot as plt
 import pandas as pd
-from one_factor_optimize_stop_loss.data.process_data import get_symbol_returns
+from back_testing.data.process_data import get_symbol_returns
 # import backtrader.plot as btp
 
 

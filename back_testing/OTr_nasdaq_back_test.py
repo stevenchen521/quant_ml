@@ -3,7 +3,7 @@ from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 import pandas as pd
 import backtrader as bt
-from backtrader.feeds import GenericCSVData
+from backtrader.feeds import GenericCSVData, DataBase
 import datetime
 import numpy as np
 from openpyxl import load_workbook
@@ -13,26 +13,55 @@ from back_testing.customize_function.Multi_datafeed_test import observers
 import os
 
 class GenericCSV_vp(GenericCSVData):
-    lines = ('tp_score',)
+    lines = ('OTri', 'Tri')
     params = (
         ('fromdate', datetime.datetime(2016, 11, 17)),
         ('todate', datetime.datetime(2019, 1, 28)),
-        ('Otri', 7)
+        ('OTri', 7),
+        ('Tri', 8)
+    )
+
+class PandasData(DataBase):
+    '''
+    The ``dataname`` parameter inherited from ``feed.DataBase`` is the pandas
+    DataFrame
+    '''
+
+    params = (
+        # Possible values for datetime (must always be present)
+        #  None : datetime is the "index" in the Pandas Dataframe
+        #  -1 : autodetect position or case-wise equal name
+        #  >= 0 : numeric index to the colum in the pandas dataframe
+        #  string : column name (as index) in the pandas dataframe
+        ('datetime', None),
+
+        # Possible values below:
+        #  None : column not present
+        #  -1 : autodetect position or case-wise equal name
+        #  >= 0 : numeric index to the colum in the pandas dataframe
+        #  string : column name (as index) in the pandas dataframe
+        ('Open', -1),
+        ('High', -1),
+        ('Low', -1),
+        ('Close', -1),
+        ('Volume', -1),
+        ('openinterest', -1),
+        ('OTri', 7),
+        ('Tri', 8),
     )
 
 
 class MyStrategy(bt.Strategy):
     ## trade_para first is tp_xu, second is tp_windowing
     params = (
-        # ('trade_para', [30, 10]),
-        # ('stoploss', 0.1),
+        ('fromdate', datetime.datetime(2016, 11, 17)),
         ('todate', datetime.datetime(2019, 1, 28))
     )
 
     def log(self, txt, dt=None):
         ''' Logging function fot this strategy'''
-        # dt = dt or self.datas[0].datetime.date(0)
-        # print('%s, %s' % (dt.isoformat(), txt))
+        dt = dt or self.datas[0].datetime.date(0)
+        print('%s, %s' % (dt.isoformat(), txt))
 
     def __init__(self):
         # Keep a reference to the "close" line in the data[0] dataseries
@@ -52,28 +81,31 @@ class MyStrategy(bt.Strategy):
         # btind.SMA(self.data.q_g, period=1, subplot=True)
 
 
-    def notify_order(self, order):
+    def notify(self, order):
         if order.status in [order.Submitted, order.Accepted]:
-            # Buy/Sell order submitted/accepted to/by broker - Nothing to do
             return
 
-        # Check if an order has been completed
-        # Attention: broker could reject order if not enough cash
         if order.status in [order.Completed]:
             if order.isbuy():
+                self.log(
+                    'BUY EXECUTED, Price: %.2f, Cost: %.2f, Comm %.2f' %
+                    (order.executed.price,
+                     order.executed.value,
+                     order.executed.comm))
+
                 self.buyprice = order.executed.price
                 self.buycomm = order.executed.comm
-                # self.log('BUY CREATE, %.2f' % self.order.executed.price + 'tp: %.2f' % self.data.tp_score[0])
-            elif order.issell():
-                # self.log('SELL CREATE, %.2f' % self.order.executed.price + 'tp: %.2f' % self.data.tp_score[0])
-                pass
-            else:
-                pass
+            else:  # Sell
+                self.log('SELL EXECUTED, Price: %.2f, Cost: %.2f, Comm %.2f' %
+                         (order.executed.price,
+                          order.executed.value,
+                          order.executed.comm))
+
             self.bar_executed = len(self)
+
         elif order.status in [order.Canceled, order.Margin, order.Rejected]:
             self.log('Order Canceled/Margin/Rejected')
 
-        self.order = None
 
 
     def notify_trade(self, trade):
@@ -85,7 +117,7 @@ class MyStrategy(bt.Strategy):
         # self.df['Net_profit'].loc[self.count-1] = trade.pnlcomm
 
     def next(self):
-        # self.log('Close, %.2f' % self.dataclose[0])
+        self.log('Close, %.2f' % self.dataclose[0])
         if self.order:
             return
         if self.datetime.datetime(ago=0) > datetime.datetime(2016, 11, 18):
@@ -94,8 +126,10 @@ class MyStrategy(bt.Strategy):
                 if (self.data.OTri[0] > 0.5) and (self.data.OTri[-1] < 0.5):
                     # amount_to_invest = (self.p.order_pct * self.broker.cash)
                     # self.size = int(amount_to_invest / self.data.close)
-                    self.order = self.buy(size=100)
+                    self.order = self.buy(size=10)
                     # self.close_type = "None"
+
+
 
 ## the most import part of rolling stop loss
 ## compare current close price with the stored one, if current one is greater , replace the stored one
@@ -105,7 +139,7 @@ class MyStrategy(bt.Strategy):
                 if (self.data.OTri[0] < 0.5) and (self.data.OTri[-1] > 0.5):
                     # amount_to_invest = (self.p.order_pct * self.broker.cash)
                     # self.size = int(amount_to_invest / self.data.close)
-                    self.order = self.sell(size=100)
+                    self.order = self.sell(size=10)
 
                 else:
                     pass
@@ -126,7 +160,7 @@ class MyStrategy(bt.Strategy):
 
     def stop(self):
         pnl = round(self.broker.getvalue() - self.startcash, 2)
-        print('Final PnL: {}'.format(self.p.stoploss, pnl))
+        print('Final PnL: {}'.format(pnl))
 
 
 def cal_std_from_returns(df, Buy_date, Sell_date):
@@ -174,15 +208,15 @@ def summary(detail_df, groupby_list):
 
 
    # the order of groupby list is important
-def format_transaction_one_factor_tp(results, commission, df, groupby_list):
-    last_close_price = df['Close'].tail(1).iloc[0]
+def format_transaction(results, commission, df, groupby_list):
+    last_close_price = df['close'].tail(1).iloc[0]
     detail_df = pd.DataFrame()
     end_date = df.tail(1).Date.values
     # for i in [35]:
     for i in range(len(results)):
         print (i)
-        strats = results[i][0]
-        # strats = results[0]
+        # strats = results[i][0]
+        strats = results[0]
         txss = strats.analyzers.transactions.get_analysis()
         transactions = format_transactions(txss)
         Buy_df = transactions[transactions['amount'] > 0]
@@ -228,12 +262,15 @@ def format_transaction_one_factor_tp(results, commission, df, groupby_list):
         # transactions_df['Sell_date'] = transactions_df['Sell_date'].apply(lambda x: x.tz_localize(None))
         transactions_df['std'] = transactions_df.apply(lambda row: cal_std_from_returns(df, row['Buy_date'], row['Sell_date']), axis=1).round(5)
         count = 0
-        for ele in groupby_list:
-            try:
-                transactions_df[ele] = getattr(strats.params, ele)
-            except Exception:
-                transactions_df[ele] = strats.params.trade_para[count]
-                count = count + 1
+        if groupby_list == None:
+            pass
+        else:
+            for ele in groupby_list:
+                try:
+                    transactions_df[ele] = getattr(strats.params, ele)
+                except Exception:
+                    transactions_df[ele] = strats.params.trade_para[count]
+                    count = count + 1
         detail_df = detail_df.append(transactions_df, ignore_index=True)
 
     detail_df['Sell_date'] = detail_df['Sell_date'].values.astype('datetime64[D]')
@@ -258,38 +295,49 @@ def format_transaction_one_factor_tp(results, commission, df, groupby_list):
     return detail_df
 
 
+def Fetch_raw_data(input_data):
+    df1 = pd.read_csv(input_data)
+    df1['Date'] = df1['Date'].apply(lambda x: pd.to_datetime(x).strftime("%Y-%m-%d %H:%M:%S"))
+    df1.dropna(how="any", inplace=True)
+    df1.set_index(['Date'], inplace=True)
+    df1['openinterest'] = 0
+    col_order = ['open', 'high', 'low', 'close', 'volume', 'openinterest', 'OTri', 'Tri']
+    df1 = df1[col_order]
+    df1.to_csv(input_data)
+
+
 def runstarts():
-    from os import listdir
-    from os.path import isfile, join
     import sys
     mypath = os.path.dirname(sys.modules['__main__'].__file__)
     file_name = "nasdaq_for_backtest_processed"
     data_path = mypath + "/data/{}.csv".format(file_name)
     summary_path = mypath + "/summary_excel/{}_summary.xlsx".format(file_name)
-    df_summary = pd.DataFrame()
     ticker_data_path = data_path
     commission = 0.002
-    cerebro = Cerebro(maxcpus=2)
+    cerebro = Cerebro(maxcpus=4)
     # Add a strategy
-    cerebro.addstrategy(MyStrategy, trade_para=para_combine, stoploss=stop_loss)
-    df = pd.read_csv(ticker_data_path, parse_dates=True)
-
-    df['Date'] = pd.to_datetime(df['Date'])
+    cerebro.addstrategy(MyStrategy)
+    # Fetch_raw_data(ticker_data_path)
+    df = pd.read_csv(ticker_data_path)
     data = GenericCSV_vp(dataname=ticker_data_path,)
     # Add the Data Feed to Cerebro
     cerebro.adddata(data, name=file_name)
-    # cerebro.addanalyzer(bt.analyzers.PyFolio)
+    cerebro.addanalyzer(bt.analyzers.PyFolio)
     cerebro.addanalyzer(bt.analyzers.TradeAnalyzer)
     cerebro.addanalyzer(Transactions)
-    cerebro.broker.setcash(1000000)
+    cerebro.broker.setcash(10000000)
     # cerebro.addsizer(bt.sizers.FixedSize, stake=10000)
     # Set the commission
     cerebro.broker.setcommission(commission=commission)
+    print('Starting Portfolio Value: %.2f' % cerebro.broker.getvalue())
+    # cerebro.addanalyzer(bt.analyzers.SharpeRatio, _name='SharpeRatio')
+    # cerebro.addanalyzer(bt.analyzers.DrawDown, _name='DW')
     results = cerebro.run()
-
-    detail_df = format_transaction_one_factor_tp(results, 0.002, df, ['tp_xu', 'tp_windowing', 'stoploss'])
-    df_summary = df_summary.append(detail_df)
-    #### save excel part
+    strat = results[0]
+    cerebro.plot()
+    detail_df = format_transaction(results, 0.002, df, None)
+    # df_summary = df_summary.append(detail_df)
+    ### save excel part
     try:
         book = load_workbook(summary_path)
     except Exception:
@@ -298,7 +346,7 @@ def runstarts():
         book = load_workbook(summary_path)
     writer = pd.ExcelWriter(summary_path, engine='openpyxl')
     writer.book = book
-    df_summary.to_excel(writer, sheet_name='summary')
+    detail_df.to_excel(writer, sheet_name='summary')
     writer.save()
     writer.close()
 
