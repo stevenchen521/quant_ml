@@ -296,12 +296,23 @@ class BaseSLTFModel(BaseTFModel):
                                       y,
                                       label,
                                       self.save_path)
+        # reformat the data and transformed the data to back testing data
         date_index = self.env.dates[self.env.e_data_indices[0] + self.env.seq_length: -1]
         dataframe_backtest = pd.DataFrame({'Tri': label.flatten(),
                                            'OTri': y.flatten()}, index = date_index)
-        original_frames = self.env.post_frames[self.env.codes[0]][self.env.e_data_indices[0] + self.env.seq_length: -1]
+        original_frames = self.env.origin_frames[self.env.codes[0]][self.env.e_data_indices[0] + self.env.seq_length: -1]
         dataframe_backtest = pd.concat([dataframe_backtest, original_frames], axis=1)
-        dataframe_backtest.to_csv("../../back_testing/data/nasdaq_for_backtest.csv")
+
+        dataframe_backtest['Date'] = dataframe_backtest.index
+        dataframe_backtest['Date'] = dataframe_backtest['Date'].apply(lambda x: pd.to_datetime(x).strftime("%Y-%m-%d %H:%M:%S"))
+        dataframe_backtest.dropna(how="any", inplace=True)
+        dataframe_backtest.set_index(['Date'], inplace=True)
+        dataframe_backtest['openinterest'] = 0
+        col_order = ['open', 'high', 'low', 'close', 'volume', 'openinterest', 'OTri', 'Tri']
+        dataframe_backtest = dataframe_backtest[col_order]
+        # dataframe_backtest = dataframe_backtest.round(2)
+        dataframe_backtest.to_csv("../../back_testing/data/nasdaq_for_backtest.csv", date_format='%Y-%m-%d %H:%M:%S')
+        print ('dataframe is updated')
 
 
     # customize function

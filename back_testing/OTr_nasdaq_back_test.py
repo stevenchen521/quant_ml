@@ -21,35 +21,6 @@ class GenericCSV_vp(GenericCSVData):
         ('Tri', 8)
     )
 
-class PandasData(DataBase):
-    '''
-    The ``dataname`` parameter inherited from ``feed.DataBase`` is the pandas
-    DataFrame
-    '''
-
-    params = (
-        # Possible values for datetime (must always be present)
-        #  None : datetime is the "index" in the Pandas Dataframe
-        #  -1 : autodetect position or case-wise equal name
-        #  >= 0 : numeric index to the colum in the pandas dataframe
-        #  string : column name (as index) in the pandas dataframe
-        ('datetime', None),
-
-        # Possible values below:
-        #  None : column not present
-        #  -1 : autodetect position or case-wise equal name
-        #  >= 0 : numeric index to the colum in the pandas dataframe
-        #  string : column name (as index) in the pandas dataframe
-        ('Open', -1),
-        ('High', -1),
-        ('Low', -1),
-        ('Close', -1),
-        ('Volume', -1),
-        ('openinterest', -1),
-        ('OTri', 7),
-        ('Tri', 8),
-    )
-
 
 class MyStrategy(bt.Strategy):
     ## trade_para first is tp_xu, second is tp_windowing
@@ -164,6 +135,7 @@ class MyStrategy(bt.Strategy):
 
 
 def cal_std_from_returns(df, Buy_date, Sell_date):
+    df.Date = pd.to_datetime(df.Date)
     return_df = df[(df.Date >= Buy_date) & (df.Date <= Sell_date)]['Close'].pct_change()
     try:
         std = np.nanstd(return_df)

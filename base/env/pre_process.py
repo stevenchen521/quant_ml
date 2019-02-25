@@ -95,8 +95,9 @@ class PreAnalyzeDefault(PreAnalyze):
         self._pre_frames = origin_frames
 
 
-class PostAnalyzeDefault(PostAnalyze):
 
+class PostAnalyzeDefault(PostAnalyze):
+    ### single csv data
     @staticmethod
     def fire(self, analyze_frames):
         # print("this is PostAnalyzeDefault")
@@ -116,6 +117,7 @@ class PostAnalyzeDefault(PostAnalyze):
         # self._scaled_frames[state_code] = self._scaled_frames[state_code].dropna(axis=0)
         # df_dates = self._dates.loc[self._start_date:self._end_date]
         self._dates = list(self._post_frames[state_code].index)
+
 
 
 def get_active_strategy():
