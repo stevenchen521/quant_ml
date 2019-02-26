@@ -1,6 +1,8 @@
 from collections import OrderedDict
 import empyrical as ep
 import numpy as np
+import matplotlib as mlb
+mlb.use("TkAgg")
 from pyfolio import timeseries
 from pyfolio.utils import (APPROX_BDAYS_PER_MONTH)
 import backtrader as bt
