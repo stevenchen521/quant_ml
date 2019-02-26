@@ -133,7 +133,8 @@ class MultiInputLSTMCell(BasicLSTMCell):
             u = multiply(   # TODO, check is here correct? element
                 u, pre_cell_state)  # (B,p) * (B, p) = (B, p)
             u = tf.reduce_sum(u, 1)
-            u = tf.reshape(u, [u.shape[0],1])
+            # u = tf.reshape(u, [u.shape[0],1])
+            u = tf.expand_dims(u, 1)
             u = nn_ops.bias_add(u, b_attn)
             return tanh(u)
 
