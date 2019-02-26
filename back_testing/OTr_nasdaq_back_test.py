@@ -16,7 +16,7 @@ class GenericCSV_vp(GenericCSVData):
     lines = ('OTri', 'Tri')
     params = (
         ('fromdate', datetime.datetime(2016, 11, 17)),
-        ('todate', datetime.datetime(2019, 1, 28)),
+        ('todate', datetime.datetime(2019, 1, 29)),
         ('OTri', 7),
         ('Tri', 8)
     )
@@ -26,7 +26,7 @@ class MyStrategy(bt.Strategy):
     ## trade_para first is tp_xu, second is tp_windowing
     params = (
         ('fromdate', datetime.datetime(2016, 11, 17)),
-        ('todate', datetime.datetime(2019, 1, 28))
+        ('todate', datetime.datetime(2019, 1, 29))
     )
 
     def log(self, txt, dt=None):
@@ -94,7 +94,7 @@ class MyStrategy(bt.Strategy):
         if self.datetime.datetime(ago=0) > datetime.datetime(2016, 11, 18):
             if not self.position: # not in the market
                 # Not yet ... we MIGHT BUY if ...
-                if (self.data.OTri[0] > 0.5) and (self.data.OTri[-1] <= 0.5):
+                if (self.data.Tri[0] >= 0.5) and (self.data.Tri[-1] < 0.5):
                     # amount_to_invest = (self.p.order_pct * self.broker.cash)
                     # self.size = int(amount_to_invest / self.data.close)
                     self.order = self.buy(size=100)
@@ -105,7 +105,7 @@ class MyStrategy(bt.Strategy):
 
             if self.position:  # in the market
                 # Not yet ... we will sell if ...
-                if (self.data.OTri[0] < 0.5) and (self.data.OTri[-1] >= 0.5):
+                if (self.data.Tri[0] < 0.5) and (self.data.Tri[-1] >= 0.5):
                     # amount_to_invest = (self.p.order_pct * self.broker.cash)
                     # self.size = int(amount_to_invest / self.data.close)
                     self.order = self.sell(size=100)

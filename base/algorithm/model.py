@@ -297,10 +297,10 @@ class BaseSLTFModel(BaseTFModel):
                                       label,
                                       self.save_path)
         # reformat the data and transformed the data to back testing data
-        date_index = self.env.dates[self.env.e_data_indices[0] + self.env.seq_length: -1]
+        date_index = self.env.dates[self.env.e_data_indices[0] + self.env.seq_length + 1:]
         dataframe_backtest = pd.DataFrame({'Tri': label.flatten(),
-                                           'OTri': y.flatten()}, index = date_index)
-        original_frames = self.env.origin_frames[self.env.codes[0]][self.env.e_data_indices[0] + self.env.seq_length: -1]
+                                           'OTri': y.flatten()}, index=date_index)
+        original_frames = self.env.origin_frames[self.env.codes[0]][self.env.e_data_indices[0] + self.env.seq_length: ]
         dataframe_backtest = pd.concat([dataframe_backtest, original_frames], axis=1)
 
         dataframe_backtest['Date'] = dataframe_backtest.index
