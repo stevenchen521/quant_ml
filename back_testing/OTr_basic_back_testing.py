@@ -12,7 +12,6 @@ import backtrader as bt
 class GenericCSV_vp(GenericCSVData):
     lines = ('OTri',)
     params = (
-        # ('dtformat', '"%Y-%m-%d %H:%M:%S"'),
         ('fromdate', datetime.datetime(2016, 11, 17)),
         ('todate', datetime.datetime(2019, 1, 28)),
         ('OTri', 7),

@@ -95,22 +95,6 @@ class Transactions(bt.Analyzer):
         self._positions.clear()
 
 
-def format_transactions(txss):
-    txs = list()
-    # The transactions have a common key (date) and can potentially happend
-    # for several assets. The dictionary has a single key and a list of
-    # lists. Each sublist contains the fields of a transaction
-    # Hence the double loop to undo the list indirection
-    for k, v in iteritems(txss):
-        for v2 in v:
-            txs.append([k] + v2)
-
-    cols = ['date', 'amount', 'price', 'sid', 'symbol', 'value', 'close_type']  # headers are in the first entry
-    transactions = pd.DataFrame.from_records(txs, index=range(len(txs)), columns=cols)
-    del transactions['sid']
-    # transactions.index = pd.to_datetime(transactions.index)
-    # transactions.index = transactions.index.tz_localize('UTC')
-    return transactions
 
 
 
