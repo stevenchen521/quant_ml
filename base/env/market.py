@@ -194,10 +194,10 @@ class Market(object):
                 if index < date_index - 1:
                     if date_index < self.bound_index:
                         # Get y, y is not at date index, but plus 1. (Training Set)
-                        instruments_y = scaled_frame.iloc[date_index + 1]["trend_['15', '5', '3']"]
+                        instruments_y = scaled_frame.iloc[date_index + 1]["trend_['5', '5', '20']"]
                     else:
                         # Get y, y is at date index. (Test Set)
-                        instruments_y = scaled_frame.iloc[date_index + 1]["trend_['15', '5', '3']"]
+                        instruments_y = scaled_frame.iloc[date_index + 1]["trend_['5', '5', '20']"]
                     data_y.append(np.array(instruments_y))
             # Convert list to array.
             data_x = np.array(data_x)

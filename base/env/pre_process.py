@@ -240,10 +240,10 @@ class IndicatorAnalysis:
         def calculate_up_trend(current_val, target_future_bars):
             if max(target_future_bars) == min(target_future_bars):
                 breakpoint()
-            return ((current_val - min(target_future_bars)) / (max(target_future_bars) - min(target_future_bars))) * 0.5 + 0.5
+            return (1-((current_val - min(target_future_bars)) / (max(target_future_bars) - min(target_future_bars)))) * 0.5 + 0.5
 
         def calculate_down_trend(current_val, target_future_bars):
-            return ((current_val - min(target_future_bars)) / (max(target_future_bars) - min(target_future_bars))) * 0.5
+            return (1-((current_val - min(target_future_bars)) / (max(target_future_bars) - min(target_future_bars)))) * 0.5
         
         # we calculate the trend
         para = args[0]
@@ -285,6 +285,9 @@ class IndicatorAnalysis:
 
         return pd.DataFrame(result).rename(columns={'close': 'trend_{}'.format(para[1:4])})
         # return pd.DataFrame(result, columns=['trend_{}'.format(para[1:4])])
+
+
+
 
 
     @catch_exception(LOGGER)
@@ -340,6 +343,9 @@ class IndicatorAnalysis:
         ds_cls = get_attribute(
             inspect.__package__ + inspect.getmodulename(__file__) + '.{}'.format(self.__class__.__name__))
         return ds_cls
+
+
+
 
 if __name__ == '__main__':
     IndicatorAnalysis1 = IndicatorAnalysis()

@@ -112,13 +112,14 @@ def main(args):
     market = args.market
     # train_steps = args.train_steps
     # train_steps = 5000
-    train_steps = 20000
+    train_steps = 10000
     # training_data_ratio = 0.98
     training_data_ratio = args.training_data_ratio
 
     env = Market(codes, start_date="2008-01-02", end_date="2019-02-01", **{
         "market": market,
         "use_sequence": True,
+        "seq_length": 20,
         "scaler": MinMaxScaler(feature_range=(0, 1)),
         "mix_index_state": True,
         "training_data_ratio": training_data_ratio,
