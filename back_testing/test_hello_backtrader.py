@@ -82,7 +82,7 @@ class TestBacktrader(unittest.TestCase):
         df_data = pd.read_csv('./orcl.csv',parse_dates=True,
                                 index_col=0)
 
-        data = bt.feeds.PandasData(dataname=df_data,close=4)
+        data = bt.feeds.PandasData(dataname=df_data, close=3)
 
         # Add the Data Feed to Cerebro
         cerebro.adddata(data)

@@ -1,4 +1,5 @@
 import inspect
+import numpy as np
 import pandas as pd
 from abc import ABCMeta, abstractmethod
 # from base.model.document import Stock, Future
@@ -119,6 +120,34 @@ class PostAnalyzeDefault(PostAnalyze):
         self._dates = list(self._post_frames[state_code].index)
 
 
+class PostAnalyzeNASDAQ(PostAnalyze):
+    ### single csv data
+    @staticmethod
+    def fire(self, analyze_frames):
+        # print("this is PostAnalyzeDefault")
+        scales = self._scaler
+        # for state_code in self._state_codes:
+        #     self._analyze_frames[state_code].to_csv("../../back_testing/data/{}.csv".format(state_code))
+        post_frame = analyze_frames[self._state_code].copy()
+
+        post_frame = post_frame.drop(['macd_1', 'macd_2'], axis=1)
+
+        new_columns = post_frame.columns
+
+        scales.fit(post_frame)
+        instruments_scaled = scales.transform(post_frame)
+        post_frame = instruments_scaled
+        self._post_frames[self._state_code] = pd.DataFrame(data=post_frame, index=self._dates.get_values().flatten(),
+                                                           columns=new_columns)
+
+        state_code = self._state_code
+        self._origin_frames[state_code] = self._origin_frames[state_code].dropna(axis=0)
+        self._post_frames[state_code] = self._post_frames[state_code].dropna(axis=0)
+        # self._scaled_frames[state_code] = self._scaled_frames[state_code].dropna(axis=0)
+        # df_dates = self._dates.loc[self._start_date:self._end_date]
+        self._dates = list(self._post_frames[state_code].index)
+
+
 
 def get_active_strategy():
     module = active_stragery.get('module')
@@ -187,6 +216,22 @@ class IndicatorAnalysis:
     #     para = args[0]
     #     result = talib.MACD(self._origin_frame[para[0]], int(para[1]), int(para[2]), int(para[3]))
     #     return pd.DataFrame(result[0], columns=['macd'])
+
+    def stoch(self, *args):
+        # df_indicators = pd.DataFrame()
+
+        para = args[0]
+        result = talib.STOCH(self._origin_frame['high'], self._origin_frame['low'], self._origin_frame[para[0]],
+                             fastk_period=int(para[1]), slowk_period=int(para[2]), slowd_period=int(para[3]))
+
+        for idx, res in enumerate(result):
+            if idx == 0:
+                df_result = pd.DataFrame(res, columns=['stoch' + str(idx)])
+            else:
+                df_result = df_result.join(pd.DataFrame(res, columns=['stoch' + '_' + str(idx)]))
+
+        return df_result
+
 
     def trend(self, *args):
         """  If closing price value leads its MA 15 and MA 15 is rising for last 5 days then trend is Uptrend
