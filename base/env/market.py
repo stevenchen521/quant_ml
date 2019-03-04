@@ -141,7 +141,7 @@ class Market(object):
 
         action_fetch, action_pre_analyze, action_analyze, action_post_analyze = pre_process.get_active_strategy()
         self.dates, self.scaled_frames, self.origin_frames, self.post_frames = \
-            pre_process.ProcessStrategy(action_fetch, action_pre_analyze, action_analyze,action_post_analyze,
+            pre_process.ProcessStrategy(action_fetch, action_pre_analyze, action_analyze, action_post_analyze,
                                         self.state_codes, start_date, end_date, self.scaler[0]).process()
 
     def _init_env_data(self):

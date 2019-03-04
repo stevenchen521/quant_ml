@@ -85,8 +85,10 @@ class FetchCSVSingle(Fetch):
         dates = pd.DataFrame(dates, index=dates, columns=['date'])
 
         df_ori = pd.DataFrame(data.get_values(), index=dates.get_values().flatten(), columns=data.columns)
-        self._origin_frames[state_code] = df_ori.loc[self._start_date:self._end_date]
-        self._dates = dates.loc[self._start_date:self._end_date]
+
+        mask = (df_ori.index > self._start_date) & (df_ori.index <= self._end_date)
+        self._origin_frames[state_code] = df_ori.loc[mask]
+        self._dates = dates.loc[mask]
 
 
 class PreAnalyzeDefault(PreAnalyze):

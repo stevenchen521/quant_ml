@@ -105,7 +105,9 @@ class Algorithm(BaseSLTFModel):
 def main(args):
     mode = args.mode
     # mode = "test"
-    codes = ["nasdaq"]
+    # codes = ["nasdaq"]
+    # codes = ["SH_index"]
+    codes = ["600276SH"]
     # codes = ["600036", "601998"]
     # codes = args.codes
     # codes = ["AU88", "RB88", "CU88", "AL88"]
@@ -116,7 +118,7 @@ def main(args):
     # training_data_ratio = 0.98
     training_data_ratio = args.training_data_ratio
 
-    env = Market(codes, start_date="2008-01-02", end_date="2019-02-01", **{
+    env = Market(codes, start_date="2008-01-02", end_date="2019-02-28", **{
         "market": market,
         "use_sequence": True,
         "seq_length": 20,
@@ -138,7 +140,7 @@ def main(args):
     })
 
     algorithm.run()
-    algorithm.eval_and_plot_nasdaq_backtest()
+    algorithm.eval_and_plot_nasdaq_backtest(code=codes[0])
 
 if __name__ == '__main__':
     main(model_launcher_parser.parse_args())

@@ -284,7 +284,7 @@ class BaseSLTFModel(BaseTFModel):
                                       label,
                                       self.save_path)
 
-    def eval_and_plot_nasdaq_backtest(self):
+    def eval_and_plot_nasdaq_backtest(self, code, model_name):
         x, label = self.env.get_test_data()
         y = self.predict(x)
         with open(self.save_path + '_y.json', mode='w') as fp:
@@ -311,7 +311,7 @@ class BaseSLTFModel(BaseTFModel):
         col_order = ['open', 'high', 'low', 'close', 'volume', 'openinterest', 'OTri', 'Tri']
         dataframe_backtest = dataframe_backtest[col_order]
         # dataframe_backtest = dataframe_backtest.round(2)
-        dataframe_backtest.to_csv("../../back_testing/data/nasdaq_for_backtest.csv", date_format='%Y-%m-%d %H:%M:%S')
+        dataframe_backtest.to_csv("../../back_testing/data/{}_{}_for_backtest.csv".format(model_name, code), date_format='%Y-%m-%d %H:%M:%S')
         print ('dataframe is updated')
 
 

@@ -15,8 +15,8 @@ import os
 class GenericCSV_vp(GenericCSVData):
     lines = ('OTri', 'Tri')
     params = (
-        ('fromdate', datetime.datetime(2016, 11, 17)),
-        ('todate', datetime.datetime(2019, 1, 29)),
+        ('fromdate', datetime.datetime(2016, 11, 15)),
+        ('todate', datetime.datetime(2019, 2, 28)),
         ('OTri', 7),
         ('Tri', 8)
     )
@@ -25,8 +25,8 @@ class GenericCSV_vp(GenericCSVData):
 class MyStrategy(bt.Strategy):
     ## trade_para first is tp_xu, second is tp_windowing
     params = (
-        ('fromdate', datetime.datetime(2016, 11, 17)),
-        ('todate', datetime.datetime(2019, 1, 29))
+        ('fromdate', datetime.datetime(2016, 11, 15)),
+        ('todate', datetime.datetime(2019, 2, 28))
     )
 
     def log(self, txt, dt=None):
@@ -94,7 +94,7 @@ class MyStrategy(bt.Strategy):
         if self.datetime.datetime(ago=0) > datetime.datetime(2016, 11, 18):
             if not self.position: # not in the market
                 # Not yet ... we MIGHT BUY if ...
-                if (self.data.Tri[0] >= 0.5) and (self.data.Tri[-1] < 0.5):
+                if (self.data.OTri[0] >= 0.8) and (self.data.OTri[-1] < 0.8):
                     # amount_to_invest = (self.p.order_pct * self.broker.cash)
                     # self.size = int(amount_to_invest / self.data.close)
                     self.order = self.buy(size=100)
@@ -105,7 +105,7 @@ class MyStrategy(bt.Strategy):
 
             if self.position:  # in the market
                 # Not yet ... we will sell if ...
-                if (self.data.Tri[0] < 0.5) and (self.data.Tri[-1] >= 0.5):
+                if (self.data.OTri[0] < 0.5) and (self.data.OTri[-1] >= 0.5):
                     # amount_to_invest = (self.p.order_pct * self.broker.cash)
                     # self.size = int(amount_to_invest / self.data.close)
                     self.order = self.sell(size=100)
@@ -135,7 +135,7 @@ class MyStrategy(bt.Strategy):
 def runstarts():
     import sys
     mypath = os.path.dirname(sys.modules['__main__'].__file__)
-    file_name = "nasdaq_for_backtest"
+    file_name = "600276SH_for_backtest"
     data_path = mypath + "/data/{}.csv".format(file_name)
     summary_path = mypath + "/summary_excel/{}_summary.xlsx".format(file_name)
     ticker_data_path = data_path
@@ -158,7 +158,7 @@ def runstarts():
     print('Starting Portfolio Value: %.2f' % cerebro.broker.getvalue())
     results = cerebro.run()
     # strat = results[0]
-    # cerebro.plot()
+    cerebro.plot()
     '''
     Three input for BecktestSummary:
     results: result of cerebro.run()
