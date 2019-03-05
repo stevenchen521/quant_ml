@@ -24,9 +24,7 @@ class TestProcessStrategy(TestCase):
         dates, pre_frames, origin_frames, post_frames = pre_process.ProcessStrategy(self.action_fetch, self.action_pre_analyze,
                                                          self.indicators, self.action_post_analyze,
                                                ['nasdaq'], "2008-01-01", "2019-02-01", MinMaxScaler()).process()
-        # print(dates)
-        # print(post_frames)
-        
+
         self.assertIsInstance(post_frames['nasdaq'], pd.DataFrame)
 
     def test_palyaround(self):
