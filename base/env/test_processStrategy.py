@@ -21,8 +21,8 @@ class TestProcessStrategy(TestCase):
 
     def test_process(self):
         self.test_get_active_strategy()
-        dates, post_frames = pre_process.ProcessStrategy(self.action_fetch, self.action_pre_analyze,
-                                                           self.indicators, self.action_post_analyze,
+        dates, pre_frames, origin_frames, post_frames = pre_process.ProcessStrategy(self.action_fetch, self.action_pre_analyze,
+                                                         self.indicators, self.action_post_analyze,
                                                ['nasdaq'], "2008-01-01", "2019-02-01", MinMaxScaler()).process()
         # print(dates)
         # print(post_frames)

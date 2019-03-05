@@ -3,7 +3,7 @@ import numpy as np
 import pandas as pd
 from abc import ABCMeta, abstractmethod
 # from base.model.document import Stock, Future
-from base.env.pre_process_conf import file_path
+from base.env.pre_process_conf import input_selector
 # from base.env.pre_process_setting import analysis
 from base.env.pre_process_conf import active_stragery
 from helper.util import catch_exception
@@ -73,6 +73,7 @@ class FetchCSVSingle(Fetch):
 
     @staticmethod
     def fire(self):
+        file_path = active_stragery.get('source')
         state_code = str(file_path.split('/')[-1:][0]).split('.')[0]
 
         self._state_code = state_code
@@ -200,7 +201,7 @@ class ProcessStrategy(object):
         self._analyze.fire(self, self._pre_frames)
         self._post_analyze.fire(self, self._analyze_frames)
 
-        return self._dates, self._post_frames, self._origin_frames, self._post_frames
+        return self._dates, self._pre_frames, self._origin_frames, self._post_frames
 
 
 class IndicatorAnalysis:
@@ -219,20 +220,20 @@ class IndicatorAnalysis:
     #     result = talib.MACD(self._origin_frame[para[0]], int(para[1]), int(para[2]), int(para[3]))
     #     return pd.DataFrame(result[0], columns=['macd'])
 
-    def stoch(self, *args):
-        # df_indicators = pd.DataFrame()
-
-        para = args[0]
-        result = talib.STOCH(self._origin_frame['high'], self._origin_frame['low'], self._origin_frame[para[0]],
-                             fastk_period=int(para[1]), slowk_period=int(para[2]), slowd_period=int(para[3]))
-
-        for idx, res in enumerate(result):
-            if idx == 0:
-                df_result = pd.DataFrame(res, columns=['stoch' + str(idx)])
-            else:
-                df_result = df_result.join(pd.DataFrame(res, columns=['stoch' + '_' + str(idx)]))
-
-        return df_result
+    # def stoch(self, *args):
+    #     # df_indicators = pd.DataFrame()
+    #
+    #     para = args[0]
+    #     result = talib.STOCH(self._origin_frame['high'], self._origin_frame['low'], self._origin_frame[para[0]],
+    #                          fastk_period=int(para[1]), slowk_period=int(para[2]), slowd_period=int(para[3]))
+    #
+    #     for idx, res in enumerate(result):
+    #         if idx == 0:
+    #             df_result = pd.DataFrame(res, columns=['stoch' + str(idx)])
+    #         else:
+    #             df_result = df_result.join(pd.DataFrame(res, columns=['stoch' + '_' + str(idx)]))
+    #
+    #     return df_result
 
 
     def trend(self, *args):
@@ -293,13 +294,12 @@ class IndicatorAnalysis:
             return (1-((current_val - min(target_future_bars)) / (max(target_future_bars) - min(target_future_bars)))) * 0.5
         
         # we calculate the trend
-        para = args[0]
-        src_column = para[0]
-        ma_bars = int(para[1])
-        trend_bars = int(para[2])
-        future_bars = int(para[3])
-        target = self._origin_frame[src_column].copy()
+        target = args[0]
         result = target.copy()
+
+        ma_bars = int(args[1])
+        trend_bars = int(args[2])
+        future_bars = int(args[3])
 
         # get moving average
         ma = talib.MA(target, timeperiod=ma_bars)
@@ -330,7 +330,7 @@ class IndicatorAnalysis:
                     elif last_trend == TREND_UP:
                         result[curr_idx] = calculate_up_trend(val, target[curr_idx: curr_idx + future_bars])
 
-        return pd.DataFrame(result).rename(columns={'close': 'trend_{}'.format(para[1:4])})
+        return pd.DataFrame(result).rename(columns={'close': 'trend_{}'.format(args[1:4])})
         # return pd.DataFrame(result, columns=['trend_{}'.format(para[1:4])])
 
 
@@ -346,12 +346,23 @@ class IndicatorAnalysis:
             indicator = indicator.lower()
             meta_info = indicator.split('_')
 
-            method_name = meta_info[1]
+            method_name = meta_info[0]
+            del meta_info[0]
+
+            input_col = [val for val in meta_info if val.startswith(input_selector)]
+            # remove the columns, only arguments remained
+            args = list((arg for arg in meta_info if not any(col == arg for col in input_col)))
+            args = list(map(int, args))  # convert from string to int
+
+            input_col_final = [col.replace(input_selector, '') for col in input_col]
+            input = self._origin_frame[input_col_final].transpose().values
 
             method = getattr(self, method_name, None)
             if method is not None:
-                del meta_info[1]
-                result = method(meta_info)
+
+
+
+                result = method(*input, *args)
                 if df_indicators.empty:
                     df_indicators = result if result is not None else df_indicators
                 else:
@@ -360,10 +371,21 @@ class IndicatorAnalysis:
             else:
                 # try to get the method from talib
                 method = get_attribute('.'.join(['talib', method_name.upper()]))
-                args = list(map(int, meta_info[2: len(meta_info)]))  # convert from string to int
-                result = method(self._origin_frame[meta_info[0]], *args)
 
-                if isinstance(result, pd.core.series.Series):
+                # # get input columns
+                # input_col = [val for val in meta_info if val.startswith(source_selector)]
+                #
+                # # remove the columns, only arguments remained
+                # args = list((arg for arg in meta_info if not any(col == arg for col in input_col)))
+                # args = list(map(int, args))  # convert from string to int
+                #
+                # input_col_final = [col.replace(source_selector, '') for col in input_col]
+                # input = self._origin_frame[input_col_final].transpose().values
+
+                result = method(*input, *args)
+
+                # if isinstance(result, pd.core.series.Series):
+                if not isinstance(result, tuple):
                     df_result = pd.DataFrame(result, columns=[method_name])
                 else:
                     for idx, res in enumerate(result):
