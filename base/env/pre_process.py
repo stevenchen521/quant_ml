@@ -3,7 +3,7 @@ import numpy as np
 import pandas as pd
 from abc import ABCMeta, abstractmethod
 # from base.model.document import Stock, Future
-from base.env.pre_process_conf import input_selector
+# from base.env.pre_process_conf import input_selector
 # from base.env.pre_process_setting import analysis
 from base.env.pre_process_conf import active_stragery
 from helper.util import catch_exception
@@ -209,6 +209,7 @@ class IndicatorAnalysis:
     def __init__(self, origin_frame, indicators):
         self._origin_frame = origin_frame
         self._indicators = indicators
+        self._index = origin_frame.index.values
 
     # def rsi(self, *args):
     #     para = args[0]
@@ -330,8 +331,8 @@ class IndicatorAnalysis:
                     elif last_trend == TREND_UP:
                         result[curr_idx] = calculate_up_trend(val, target[curr_idx: curr_idx + future_bars])
 
-        return pd.DataFrame(result).rename(columns={'close': 'trend_{}'.format(args[1:4])})
-        # return pd.DataFrame(result, columns=['trend_{}'.format(para[1:4])])
+        # return pd.DataFrame(result).rename(columns={'close': 'trend_{}'.format(args[1:4])})
+        return pd.DataFrame(data=result, index=self._index.flatten(), columns=['trend_{}'.format(args[1:4])])
 
 
 
@@ -344,18 +345,22 @@ class IndicatorAnalysis:
         # instance = self.get_instance()
         for indicator in self._indicators:
             indicator = indicator.lower()
-            meta_info = indicator.split('_')
-
+            meta_info = indicator.split('|')
             method_name = meta_info[0]
-            del meta_info[0]
 
-            input_col = [val for val in meta_info if val.startswith(input_selector)]
+            input_col = meta_info[1].split('_')
+
+            # method_name = meta_info[0]
+            # del meta_info[0]
+
+            # input_col = [val for val in paras if val.startswith(input_selector)]
             # remove the columns, only arguments remained
-            args = list((arg for arg in meta_info if not any(col == arg for col in input_col)))
+            # args = list((arg for arg in paras if not any(col == arg for col in input_col)))
+            args = meta_info[2].split('_')
             args = list(map(int, args))  # convert from string to int
 
-            input_col_final = [col.replace(input_selector, '') for col in input_col]
-            input = self._origin_frame[input_col_final].transpose().values
+            # input_col_final = [col.replace(input_selector, '') for col in input_col]
+            input = self._origin_frame[input_col].transpose().values
 
             method = getattr(self, method_name, None)
             if method is not None:
@@ -386,13 +391,15 @@ class IndicatorAnalysis:
 
                 # if isinstance(result, pd.core.series.Series):
                 if not isinstance(result, tuple):
-                    df_result = pd.DataFrame(result, columns=[method_name])
+                    df_result = pd.DataFrame(data=result, index=self._index.flatten(), columns=[method_name])
                 else:
                     for idx, res in enumerate(result):
                         if idx == 0:
-                            df_result = pd.DataFrame(res, columns=[method_name + '_' + str(idx)])
+                            df_result = pd.DataFrame(data=res, index=self._index.flatten(),
+                                                     columns=[method_name + '_' + str(idx)])
                         else:
-                            df_result = df_result.join(pd.DataFrame(res, columns=[method_name + '_' + str(idx)]))
+                            df_result = df_result.join(pd.DataFrame(data=res, index=self._index.flatten(),
+                                                                    columns=[method_name + '_' + str(idx)]))
                     # df_result = pd.DataFrame(result[0], columns=[method_name])
 
                 if df_indicators.empty:
