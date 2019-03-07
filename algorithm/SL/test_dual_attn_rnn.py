@@ -40,7 +40,8 @@ class TestDualAttnRnn(TestCase):
 
         algorithm = Algorithm(tf.Session(config=config), env, env.seq_length, env.data_dim, env.code_count, **{
             "mode": mode,
-            "hidden_size": 32,
+            "hidden_size": 48,
+            "learning_rate": 0.0001,
             "enable_saver": True,
             "train_steps": train_steps,
             "enable_summary_writer": True,
@@ -50,3 +51,41 @@ class TestDualAttnRnn(TestCase):
 
         algorithm.run()
         algorithm.eval_and_plot_nasdaq_backtest()
+
+    def test_sh_index(self):
+        mode = self.args.mode
+        # mode = "test"
+        codes = ["SH_index"]
+        market = self.args.market
+        # train_steps = args.train_steps
+        # train_steps = 5000
+        train_steps = 40000
+        # training_data_ratio = 0.98
+        training_data_ratio = self.args.training_data_ratio
+
+        env = Market(codes, start_date="2001-01-02", end_date="2019-02-01", **{
+            "market": market,
+            "use_sequence": True,
+            "seq_length": 5,
+            "scaler": MinMaxScaler(feature_range=(0, 1)),
+            "mix_index_state": True,
+            "training_data_ratio": training_data_ratio,
+        })
+
+        model_name = os.path.basename(__file__).split('.')[0]
+
+        algorithm = Algorithm(tf.Session(config=config), env, env.seq_length, env.data_dim, env.code_count, **{
+            "mode": mode,
+            "hidden_size": 6,
+            # "learning_rate": 0.001,
+            "layer_size": 2,
+            "keep_prob": 0.98,
+            "enable_saver": False,
+            "train_steps": train_steps,
+            "enable_summary_writer": False,
+            "save_path": os.path.join(CHECKPOINTS_DIR, "SL", model_name, market, "model"),
+            "summary_path": os.path.join(CHECKPOINTS_DIR, "SL", model_name, market, "summary"),
+        })
+
+        algorithm.run()
+        algorithm.eval_and_plot_nasdaq_backtest(code=codes[0], model_name=model_name)

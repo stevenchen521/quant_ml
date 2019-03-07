@@ -11,7 +11,7 @@ import base.env.pre_process
 class TestProcessStrategy(TestCase):
 
     def test_get_active_strategy(self):
-        self.action_fetch, self.action_pre_analyze, self.indicators, self.action_post_analyze = \
+        self.action_fetch, self.action_pre_analyze, self.indicators, self.action_post_analyze, self._label = \
             pre_process.get_active_strategy()
 
         self.assertIsNotNone(self.action_fetch)
@@ -21,11 +21,13 @@ class TestProcessStrategy(TestCase):
 
     def test_process(self):
         self.test_get_active_strategy()
-        dates, pre_frames, origin_frames, post_frames = pre_process.ProcessStrategy(self.action_fetch, self.action_pre_analyze,
-                                                         self.indicators, self.action_post_analyze,
+        dates, pre_frames, origin_frames, post_frames = pre_process.ProcessStrategy(
+                                                        # self.action_fetch, self.action_pre_analyze,self.indicators, self.action_post_analyze,
                                                ['nasdaq'], "2008-01-01", "2019-02-01", MinMaxScaler()).process()
+        result = post_frames['nasdaq'].dropna()
 
-        self.assertIsInstance(post_frames['nasdaq'], pd.DataFrame)
+        self.assertIsInstance(result, pd.DataFrame)
+        self.assertNotEqual(result.values.size, 0)
 
     def test_palyaround(self):
         # action_post_analyze = get_attribute('.'.join([active_stragery.get('module'), 'PreAnalyzeDefault']))

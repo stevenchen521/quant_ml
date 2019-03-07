@@ -36,6 +36,8 @@ class Algorithm(BaseSLTFModel):
         self.x = tf.placeholder(tf.float32, [None, self.seq_length, self.x_space])
         self.label = tf.placeholder(tf.float32, [None, self.y_space])
 
+        self.learning_rate_tensor = tf.placeholder(tf.float32, None, name="learning_rate")
+
     def _init_nn(self):
         # First Attn
         with tf.variable_scope("1st_encoder"):
@@ -61,18 +63,40 @@ class Algorithm(BaseSLTFModel):
     def _init_op(self):
         with tf.variable_scope('loss'):
             self.loss = tf.losses.mean_squared_error(self.y, self.label)
+        with tf.variable_scope('loss_test'):
+            self.loss_test = tf.losses.mean_squared_error(self.y, self.label)
         with tf.variable_scope('train'):
             self.global_step = tf.Variable(0, trainable=False)
+
+            # should we use the the decay???
             self.optimizer = tf.train.RMSPropOptimizer(self.learning_rate)
             self.train_op = self.optimizer.minimize(self.loss)
         self.session.run(tf.global_variables_initializer())
 
     def train(self):
         for step in range(self.train_steps):
+            learning_rate = self.learning_rate * (
+                    self.learning_rate_decay ** max(float(step/1000 + 1), 0.0)
+            )
             batch_x, batch_y = self.env.get_batch_data(self.batch_size)
-            _, loss = self.session.run([self.train_op, self.loss], feed_dict={self.x: batch_x, self.label: batch_y})
+            train_data_feed = {
+                # self.learning_rate_tensor: learning_rate,
+                self.x: batch_x,
+                self.label: batch_y
+                # empty one dimensional tensor
+            }
+            _, loss = self.session.run([self.train_op, self.loss], feed_dict=train_data_feed)
             if (step + 1) % 1000 == 0:
-                logging.warning("Step: {0} | Loss: {1:.7f}".format(step + 1, loss))
+                # logging.warning("Step: {0} |Loss: {1:.7f}".format(step + 1, loss))
+                test_x, label = self.env.get_test_data()
+                test_data_feed = {
+                    # self.learning_rate_tensor: 0,
+                    self.x: test_x,
+                    self.label: label
+                }
+                test_pred, loss_test = self.session.run([self.y, self.loss_test], feed_dict=test_data_feed)
+                logging.warning("Step: {0} |train_loss: {1:.7f} |Test_Loss: {2:.7f}"
+                                .format(step + 1, loss, loss_test))
             if step > 0 and (step + 1) % self.save_step == 0:
                 if self.enable_saver:
                     self.save(step)

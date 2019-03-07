@@ -132,8 +132,8 @@ class PostAnalyzeNASDAQ(PostAnalyze):
         # for state_code in self._state_codes:
         #     self._analyze_frames[state_code].to_csv("../../back_testing/data/{}.csv".format(state_code))
         post_frame = analyze_frames[self._state_code].copy()
-
-        post_frame = post_frame.drop(['macd_1', 'macd_2'], axis=1)
+        post_frame = post_frame.drop(['high', 'low', 'open', 'close'], axis=1)
+        post_frame = post_frame.rename(index=str, columns={"close":"close1", self._label: "close"})
 
         new_columns = post_frame.columns
 
@@ -158,29 +158,34 @@ def get_active_strategy():
     pre_analyze = active_stragery.get('pre_analyze')
     analyze = active_stragery.get('analyze')
     post_analyze = active_stragery.get('post_analyze')
+    label = active_stragery.get('label')
+    if label is None:
+        label = 'close'
 
     action_fetch = get_attribute('.'.join([module, fetch]))
     action_pre_analyze = get_attribute('.'.join([module, pre_analyze]))
     # analyze = get_attribute('.'.join([module, active_stragery.get('analyze')]))
     indicators = analyze
     action_post_analyze = get_attribute('.'.join([module, post_analyze]))
-    return action_fetch, action_pre_analyze, indicators, action_post_analyze
+    return action_fetch, action_pre_analyze, indicators, action_post_analyze, label
 
 
 class ProcessStrategy(object):
 
-    def __init__(self, fetch, pre_analyze, indicators, post_analyze,
+    def __init__(self, # fetch, pre_analyze, indicators, post_analyze,
                  state_codes, start_date, end_date, scaler):
-        self._fetch = fetch
-        self._pre_analyze = pre_analyze
+        self._fetch, self._pre_analyze, self._indicators , self._post_analyze, self._label = get_active_strategy()
+
+        # self._fetch = action_fetch
+        # self._pre_analyze = action_pre_analyze
         self._analyze = Analyze # the analyze function in this module
-        self._post_analyze = post_analyze
+        # self._post_analyze = action_post_analyze
 
         # self._data_source = data_source
         self._state_codes = state_codes
         self._start_date = start_date
         self._end_date = end_date
-        self._indicators = indicators
+        # self._indicators = action_analyze
 
         self._scaler = scaler
         self._dates = list()
@@ -201,7 +206,7 @@ class ProcessStrategy(object):
         self._analyze.fire(self, self._pre_frames)
         self._post_analyze.fire(self, self._analyze_frames)
 
-        return self._dates, self._pre_frames, self._origin_frames, self._post_frames
+        return self._dates, self._post_frames, self._origin_frames, self._post_frames
 
 
 class IndicatorAnalysis:
@@ -210,6 +215,7 @@ class IndicatorAnalysis:
         self._origin_frame = origin_frame
         self._indicators = indicators
         self._index = origin_frame.index.values
+        self._label = None
 
     # def rsi(self, *args):
     #     para = args[0]
@@ -332,11 +338,8 @@ class IndicatorAnalysis:
                         result[curr_idx] = calculate_up_trend(val, target[curr_idx: curr_idx + future_bars])
 
         # return pd.DataFrame(result).rename(columns={'close': 'trend_{}'.format(args[1:4])})
-        return pd.DataFrame(data=result, index=self._index.flatten(), columns=['trend_{}'.format(args[1:4])])
-
-
-
-
+        self._label = 'trend_{}'.format("_".join([str(v) for v in args[1:4]]))
+        return pd.DataFrame(data=result, index=self._index.flatten(), columns=[self._label])
 
     @catch_exception(LOGGER)
     def analyze(self):
@@ -389,9 +392,10 @@ class IndicatorAnalysis:
 
                 result = method(*input, *args)
 
+                args_str = "_".join([str(v) for v in args])
                 # if isinstance(result, pd.core.series.Series):
                 if not isinstance(result, tuple):
-                    df_result = pd.DataFrame(data=result, index=self._index.flatten(), columns=[method_name])
+                    df_result = pd.DataFrame(data=result, index=self._index.flatten(), columns=["{}_{}".format(method_name,args_str)])
                 else:
                     for idx, res in enumerate(result):
                         if idx == 0:
@@ -399,7 +403,7 @@ class IndicatorAnalysis:
                                                      columns=[method_name + '_' + str(idx)])
                         else:
                             df_result = df_result.join(pd.DataFrame(data=res, index=self._index.flatten(),
-                                                                    columns=[method_name + '_' + str(idx)]))
+                                                                columns=["{}_{}_{}".format(method_name,args_str, str(idx))]))
                     # df_result = pd.DataFrame(result[0], columns=[method_name])
 
                 if df_indicators.empty:
@@ -420,9 +424,3 @@ class IndicatorAnalysis:
             inspect.__package__ + inspect.getmodulename(__file__) + '.{}'.format(self.__class__.__name__))
         return ds_cls
 
-
-
-
-if __name__ == '__main__':
-    IndicatorAnalysis1 = IndicatorAnalysis()
-    IndicatorAnalysis1.trend()
