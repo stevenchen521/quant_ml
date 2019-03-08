@@ -284,7 +284,7 @@ class BaseSLTFModel(BaseTFModel):
                                       label,
                                       self.save_path)
 
-    def eval_and_plot_nasdaq_backtest(self, code, model_name):
+    def eval_and_plot_backtest(self, code, model_name):
         x, label = self.env.get_test_data()
         y = self.predict(x)
         with open(self.save_path + '_y.json', mode='w') as fp:

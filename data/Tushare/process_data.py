@@ -2,33 +2,55 @@ import tushare as ts
 from data.Tushare.config import token
 import pandas as pd
 
-def process_data(df, ts_code):
-    # df.sort_values(by=['date'], ascending=True, inplace=True)
-    df['date'] = df['trade_date'].apply(lambda x:pd.to_datetime(x).strftime("%Y-%m-%d"))
-    df.sort_values(by=['date'], ascending=True, inplace=True)
-    col_need = ['date', 'open', 'high', 'low', 'close', 'vol']
-    df = df[col_need]
-    df.rename(columns={'vol': 'volume'}, inplace=True)
-    df.index = df['date']
-    del df['date']
-    df.to_csv("..\..\data\{}.csv".format(ts_code))
-    print('process is finished')
+class ProcessRawData(object):
+    '''
+    data download from tushare
+    save_code: default false not to save; name of file to save.
+    col_need: col need to save
+    rename: default false no rename, else input a rename dictionary
+    need_return: default false, else will return a processed dataframe
+    '''
+    @staticmethod
+    def process_data_from_tushare(df, save_code=False, col_need=False, rename=False, need_return=False):
+        df['date'] = df['date'].apply(lambda x: pd.to_datetime(x).strftime("%Y-%m-%d"))
+        df.sort_values(by=['date'], ascending=True, inplace=True)
+        if col_need:
+            df = df[col_need]
+        else:
+            pass
+        if rename:
+            df.rename(columns=rename, inplace=True)
+        else:
+            pass
+        df.index = df['date']
+        del df['date']
+        if save_code:
+            df.to_csv("..\..\data\{}.csv".format(save_code))
+        else:
+            pass
+        if need_return:
+            print('process is finished')
+            return df
+        else:
+            print('process is finished')
 
 
-class ProcessDownloadData(object):
-    def __init__(self, df,  code_list, save_path='../data', default = True):
-        self.df = df
-        self.save_path = save_path
-        self.default = default
-        # self.code_list = code_list
+
+    @staticmethod
+    def process_data_from_BBG(df1, df2, save_code, add_col):
+        eps = df2[add_col]
 
 
-if __name__ == '__main__':
-    ts.set_token(token=token)
-    pro = ts.pro_api()
-    # df = pro.index_daily(ts_code='600276.SH', start_date='20010101', end_date='20190227')
-    df = pro.daily(ts_code='600276.SH', start_date='20010101', end_date='20190227')
-    process_data(df, '600276SH')
+
+
+
+
+
+
+
+
+
+
 
 
 

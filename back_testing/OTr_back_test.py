@@ -135,7 +135,8 @@ class MyStrategy(bt.Strategy):
 def runstarts():
     import sys
     mypath = os.path.dirname(sys.modules['__main__'].__file__)
-    file_name = "600276SH_for_backtest"
+    # file_name = "600276SH_for_backtest"
+    file_name = 'DualAttnRNN_SH_index_all_for_backtest'
     data_path = mypath + "/data/{}.csv".format(file_name)
     summary_path = mypath + "/summary_excel/{}_summary.xlsx".format(file_name)
     ticker_data_path = data_path

@@ -35,7 +35,7 @@ third one: future bar length, focus on return in future length
 '''
 strategy_SH_index = {
     'module': 'base.env.pre_process',
-    'source': '../../data/SH_index.csv',
+    'source': '../../data/SH_index_all.csv',
     'fetch': 'FetchCSVSingle',
     'pre_analyze': 'PreAnalyzeDefault',
     'analyze': [
