@@ -49,9 +49,22 @@ class TestProcessRawData(TestCase):
         df2 = ProcessRawData.process_data_from_tushare(df=df2,
                                                        col_need=['date', '1y'],
                                                        need_return=True)
-
         df1 = df1.append(df2)
         df1.to_csv("..\..\data\shibor_lpr.csv")
+
+
+    def test_process_account_data(self):
+        pro = ts.pro_api()
+        df1 = pro.stk_account(start_date='20010101', end_date='20100101')
+        df2 = pro.stk_account(start_date='20100102', end_date='20190307')
+
+        df1 = ProcessRawData.process_data_from_tushare(df=df1,
+                                                       need_return=True)
+        df2 = ProcessRawData.process_data_from_tushare(df=df2,
+                                                       need_return=True)
+        df1 = df1.append(df2)
+        df1.to_csv("..\..\data\Account_number.csv")
+
 
 
 
@@ -73,6 +86,23 @@ class TestProcessRawData(TestCase):
         df_final.to_csv('../../data/SH_index_all.csv')
         # ProcessRawData.process_data_from_BBG(df1=df1, df2=df2, save_code='SH_index', add_col='IS_EPS')
 
+
+    def test_merge_data1(self):
+        df1 = pd.read_csv('../../data/SH_index.csv')
+        df2 = pd.read_csv('../../data/SH_index_growth.csv')
+        df2.rename(columns={'Date': 'date'}, inplace=True)
+        df2['date'] = df2['date'].apply(lambda x: pd.to_datetime(x).strftime("%Y-%m-%d"))
+        df2.sort_values(by=['date'], ascending=True, inplace=True)
+        df3 = pd.read_csv('../../data/shibor.csv')
+        # df_temp = pd.merge(df1, df2, left_index=True, right_index=True, left_on='date', how='left')
+        dfs = [df1, df2, df3]
+        df_final = reduce(lambda left, right: pd.merge(left, right, on='date', how='left'), dfs)
+        # df_final = df_final.drop(['EOD_RISK_FREE_RATE_MID', 'FAIR_VALUE', 'DVD_SH_LAST'], axis=1)
+        df_final.index = df_final['date']
+        del df_final['date']
+        df_final = df_final[['open', 'high', 'low', 'close', 'volume', 'on', '1m', '6m', '1y']]
+        df_final = df_final.dropna(how='any')
+        df_final.to_csv('../../data/SH_index_all.csv')
 
 
 

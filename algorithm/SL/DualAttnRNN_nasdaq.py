@@ -105,20 +105,15 @@ class Algorithm(BaseSLTFModel):
 def main(args):
     mode = args.mode
     # mode = "test"
-    # codes = ["nasdaq"]
-    # codes = ["SH_index"]
-    codes = ["600276SH"]
-    # codes = ["600036", "601998"]
-    # codes = args.codes
-    # codes = ["AU88", "RB88", "CU88", "AL88"]
+    codes = ["SH_index_all"]
     market = args.market
     # train_steps = args.train_steps
     # train_steps = 5000
-    train_steps = 10000
+    train_steps = 30000
     # training_data_ratio = 0.98
     training_data_ratio = args.training_data_ratio
 
-    env = Market(codes, start_date="2008-01-02", end_date="2019-02-28", **{
+    env = Market(codes, start_date="2006-10-09", end_date="2019-02-27", **{
         "market": market,
         "use_sequence": True,
         "seq_length": 20,
@@ -128,19 +123,23 @@ def main(args):
     })
 
     model_name = os.path.basename(__file__).split('.')[0]
+    print(os.path.join(CHECKPOINTS_DIR, "SL", model_name, market, "model"))
+    print(os.path.join(CHECKPOINTS_DIR, "SL", model_name, market, "summary"))
 
     algorithm = Algorithm(tf.Session(config=config), env, env.seq_length, env.data_dim, env.code_count, **{
         "mode": mode,
-        "hidden_size": 32,
-        "enable_saver": True,
+        "hidden_size": 12,
+        "layer_size": 2,
+        "enable_saver": False,
         "train_steps": train_steps,
-        "enable_summary_writer": True,
+        "enable_summary_writer": False,
         "save_path": os.path.join(CHECKPOINTS_DIR, "SL", model_name, market, "model"),
         "summary_path": os.path.join(CHECKPOINTS_DIR, "SL", model_name, market, "summary"),
     })
 
     algorithm.run()
-    algorithm.eval_and_plot_nasdaq_backtest(code=codes[0])
+    algorithm.eval_and_plot_backtest(code=codes[0], model_name=model_name)
+
 
 if __name__ == '__main__':
     main(model_launcher_parser.parse_args())
