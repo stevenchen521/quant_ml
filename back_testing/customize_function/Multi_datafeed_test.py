@@ -22,6 +22,7 @@ class MyStrategy(bt.Strategy):
     #     self.mystats = open('data/mystats.csv', 'wb')
     #     self.mystats.write('trade_date, open,high, low, close, volume, vp, q_g, cash, value')
 
+
     def log(self, txt, dt=None):
         ''' Logging function fot this strategy'''
         dt = dt or self.datas[0].datetime.date(0)

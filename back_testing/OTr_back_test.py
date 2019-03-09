@@ -3,7 +3,7 @@ from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 import pandas as pd
 import backtrader as bt
-from backtrader.feeds import GenericCSVData, DataBase
+from backtrader.feeds import GenericCSVData
 import datetime
 import numpy as np
 
@@ -12,7 +12,7 @@ from back_testing.customize_function.customized_analyzer import Transactions
 from back_testing.customize_function.Multi_datafeed_test import observers
 import os
 
-class GenericCSV_vp(GenericCSVData):
+class GenericCSV_OTri(GenericCSVData):
     lines = ('OTri', 'Tri')
     params = (
         ('fromdate', datetime.datetime(2016, 11, 15)),
@@ -146,7 +146,7 @@ def runstarts():
     cerebro.addstrategy(MyStrategy)
     # Fetch_raw_data(ticker_data_path)
     df = pd.read_csv(ticker_data_path)
-    data = GenericCSV_vp(dataname=ticker_data_path,)
+    data = GenericCSV_OTri(dataname=ticker_data_path,)
     # Add the Data Feed to Cerebro
     cerebro.adddata(data, name=file_name)
     cerebro.addanalyzer(bt.analyzers.PyFolio)

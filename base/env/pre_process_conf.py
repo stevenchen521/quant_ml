@@ -7,6 +7,26 @@ analyze format: 'method'|'input columns'|'method parameters'
     i.e. stoch|high_low_close|14_3: indicator STOCH on the 'high, low, close' with parameter 14, 3
 """
 
+strategy_play = {
+    'module': 'base.env.pre_process',
+    'source': '../../data/nasdaq.csv',
+    'fetch': 'FetchCSVSingle',
+    'pre_analyze': 'PreAnalyzeDefault',
+    'analyze': [
+                'ma|close|5_0',
+                'ma|close|5_1',
+                'ma|close|5_2',
+                'rsi|close|14',
+                'macd|close|12_26_9',
+                'minus_dm|high_low|14', 'plus_dm|high_low|14', 'adx|high_low_close|14', # Directional Movement Index(DMI)
+                'stoch|high_low_close|14_3',
+                'trend|close|5_5_20'],
+    'post_analyze': 'PostAnalyzeNASDAQ',
+    'label': 'trend_5_5_20'
+    # 'post_analyze': 'PostAnalyzeDefault',
+}
+
+
 
 strategy_nasdaq = {
     'module': 'base.env.pre_process',

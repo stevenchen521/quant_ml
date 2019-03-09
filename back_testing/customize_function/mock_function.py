@@ -5,14 +5,11 @@ import matplotlib as mlb
 mlb.use("TkAgg")
 from pyfolio import timeseries
 from pyfolio.utils import (APPROX_BDAYS_PER_MONTH)
+
 import backtrader as bt
-# import matplotlib.pyplot as plt
 import pandas as pd
-from back_testing.data.process_data import get_symbol_returns
-import datetime
 from backtrader.utils.py3 import items, iteritems
 from openpyxl import load_workbook
-# import backtrader.plot as btp
 
 
 STAT_FUNCS_PCT = [
@@ -248,64 +245,64 @@ class PerformanceReport():
             stats_dict.to_excel(writer, sheet_name="trade_parameter")
             writer.save()
 
-
-#### this is just for tp backtest
-class PerformanceReport2(PerformanceReport):
-    def generate_excel_report(self, commission, template=None):
-        st = self.stratbt
-        pyfoliozer = st.analyzers.getbyname('pyfolio')
-        returns, positions, transactions, gross_lev = pyfoliozer.get_pf_items()
-        ### need to first calculate stats_dict1 becauce return index datetime should be include hour minute and seconds.
-        benchmark_rets = get_symbol_returns(filename=self.Indexinfilename)
-        stats_dict1 = show_perf_stats_beta(returns, benchmark_rets,
-                                          positions=positions,
-                                          transactions=transactions)
-        stats_dict = self.get_stats()
-        stats_dict = pd.DataFrame.from_dict(stats_dict, orient='index')
-        stats_dict.rename(columns={0: 'Backtest'}, inplace=True)
-        stats_dict = stats_dict.append(stats_dict1)
-        stats_dict = stats_dict.round(2)
-
-        # format position
-        positions.index.names = ['date']
-        positions.index = positions.index.strftime('%Y-%m-%d')
-        positions = positions.round(2)
-
-        # format returns
-        returns = pd.DataFrame(returns)
-        returns.index = returns.index.strftime('%Y-%m-%d')
-        returns = returns.round(2)
-
-        ## format transactions df
-        transactions.index = transactions.index.strftime('%Y-%m-%d')
-        transactions = transactions.round({'price': 2})
-        transactions['commission'] = abs(transactions['value'] * commission)
-        transactions['action'] = transactions['amount'].apply(lambda x: 'Buy' if x > 0 else 'Sell')
-        # transactions['cost'] = transactions.apply(lambda row: '' if row.value < 0 else)
-
-        # transactions['net'] =
-        # transactions['gross']
-        # transactions['net']
-
-        ### get stats_dict run out by pyfolio
-        # stats_dict = pd.DataFrame(stats_dict)
-        # stats_dict.update(stats_dict1)
-        if template== None:
-        ### default template
-            writer = pd.ExcelWriter(self.outfilename)
-            positions.to_excel(writer, sheet_name="backtest_report")
-            transactions.to_excel(writer, sheet_name="backtest_report", startcol=5)
-            returns.to_excel(writer, sheet_name="backtest_report", startcol=13)
-            stats_dict.to_excel(writer, sheet_name="backtest_report", startcol=16)
-            writer.save()
-        else:
-        ### first template
-            writer = pd.ExcelWriter(self.outfilename)
-            positions.to_excel(writer, sheet_name="trade_positions")
-            transactions.to_excel(writer, sheet_name="transactions")
-            returns.to_excel(writer, sheet_name="returns")
-            stats_dict.to_excel(writer, sheet_name="trade_parameter")
-            writer.save()
+#
+# #### this is just for tp backtest
+# class PerformanceReport2(PerformanceReport):
+#     def generate_excel_report(self, commission, template=None):
+#         st = self.stratbt
+#         pyfoliozer = st.analyzers.getbyname('pyfolio')
+#         returns, positions, transactions, gross_lev = pyfoliozer.get_pf_items()
+#         ### need to first calculate stats_dict1 becauce return index datetime should be include hour minute and seconds.
+#         benchmark_rets = get_symbol_returns(filename=self.Indexinfilename)
+#         stats_dict1 = show_perf_stats_beta(returns, benchmark_rets,
+#                                           positions=positions,
+#                                           transactions=transactions)
+#         stats_dict = self.get_stats()
+#         stats_dict = pd.DataFrame.from_dict(stats_dict, orient='index')
+#         stats_dict.rename(columns={0: 'Backtest'}, inplace=True)
+#         stats_dict = stats_dict.append(stats_dict1)
+#         stats_dict = stats_dict.round(2)
+#
+#         # format position
+#         positions.index.names = ['date']
+#         positions.index = positions.index.strftime('%Y-%m-%d')
+#         positions = positions.round(2)
+#
+#         # format returns
+#         returns = pd.DataFrame(returns)
+#         returns.index = returns.index.strftime('%Y-%m-%d')
+#         returns = returns.round(2)
+#
+#         ## format transactions df
+#         transactions.index = transactions.index.strftime('%Y-%m-%d')
+#         transactions = transactions.round({'price': 2})
+#         transactions['commission'] = abs(transactions['value'] * commission)
+#         transactions['action'] = transactions['amount'].apply(lambda x: 'Buy' if x > 0 else 'Sell')
+#         # transactions['cost'] = transactions.apply(lambda row: '' if row.value < 0 else)
+#
+#         # transactions['net'] =
+#         # transactions['gross']
+#         # transactions['net']
+#
+#         ### get stats_dict run out by pyfolio
+#         # stats_dict = pd.DataFrame(stats_dict)
+#         # stats_dict.update(stats_dict1)
+#         if template== None:
+#         ### default template
+#             writer = pd.ExcelWriter(self.outfilename)
+#             positions.to_excel(writer, sheet_name="backtest_report")
+#             transactions.to_excel(writer, sheet_name="backtest_report", startcol=5)
+#             returns.to_excel(writer, sheet_name="backtest_report", startcol=13)
+#             stats_dict.to_excel(writer, sheet_name="backtest_report", startcol=16)
+#             writer.save()
+#         else:
+#         ### first template
+#             writer = pd.ExcelWriter(self.outfilename)
+#             positions.to_excel(writer, sheet_name="trade_positions")
+#             transactions.to_excel(writer, sheet_name="transactions")
+#             returns.to_excel(writer, sheet_name="returns")
+#             stats_dict.to_excel(writer, sheet_name="trade_parameter")
+#             writer.save()
 
 
 # writer.save()
@@ -326,9 +323,11 @@ class Cerebro(bt.Cerebro):
         self.addanalyzer(bt.analyzers.TradeAnalyzer,
                          _name="myTradeAnalysis")
 
+
 ### runstrates is the result that will create after cerebro.run
     def get_strategy_backtest(self):
         return self.runstrats[0][0]
+
 
 
     ## the result input here should be the things run out by cerebro.run()
@@ -338,181 +337,10 @@ class Cerebro(bt.Cerebro):
         rpt.generate_excel_report()
 
 
-    # def processPlots(self, cerebro, numfigs=1, iplot=True, start=None, end=None, width=16, height=9, dpi=300, tight=True, use=None, **kwargs):
-    #     # if self._exactbars > 0:
-    #     #     return
-    #     from backtrader import plot
-    #     if cerebro.p.oldsync:
-    #         plotter = plot.Plot_OldSync(**kwargs)
-    #     else:
-    #         plotter = plot.Plot(**kwargs)
-    #
-    #     figs = []
-    #     for stratlist in cerebro.runstrats:
-    #         for si, strat in enumerate(stratlist):
-    #             rfig = plotter.plot(strat, figid=si * 100,
-    #                                 numfigs=numfigs, iplot=iplot,
-    #                                 start=start, end=end, use=use)
-    #             figs.append(rfig)
-    #             # this blocks code execution
-    #             # plotter.show()
-    #     for fig in figs:
-    #         for f in fig:
-    #             f.savefig('chart/backtest_fig.png', bbox_inches='tight')
-    #     return figs
-
-
-# class Plotter(btp.Plot):
-#     def __init__(self):
-#         super(Plotter, self).__init__(volup='#60cc73')  # custom color for volume up bars
-#
-#     def show(self):
-#         mng = self.mpyplot.get_current_fig_manager()
-#         mng.window.state('zoomed')
-#         self.mpyplot.savefig('chart/backtest_fig.png', bbox_inches='tight', dpi=400)
-#         self.mpyplot.show()
-
-
-
-class format_transaction_one_factor(object):
-    def __init__(self, buy_para_name, sell_para_name):
-        self.buy_para_name = buy_para_name
-        self.sell_para_name = sell_para_name
-
-    def cal_std_mean_from_returns(self, df, Buy_date, Sell_date):
-        return_df = df[(df.Date >= Buy_date) & (df.Date <= Sell_date)]['Close'].pct_change()
-        try:
-            std = np.nanstd(return_df)
-            mean = np.nanmean(return_df)
-        except Exception:
-            std = np.nan
-            mean = np.nan
-        return mean, std
-
-    ### df is the csv file you use to backtest, use to calculate sharpe ratio
-    def summary(self, detail_df):
-        tp_xd = detail_df[self.sell_para_name].iloc[0]  ######################################################
-        tp_xu = detail_df[self.buy_para_name].iloc[0]  #####################################################
-        Avg_trans_return = round(detail_df['trans_return'].mean(), 4)
-        Avg_daily_return = round(detail_df['daily_return'].mean(), 4)
-        Avg_annual_return = round(detail_df['annual_return'].mean(), 4)
-        total_period = int(detail_df['period'].sum())
-        Avg_period = int(detail_df['period'].mean())
-        win_time = len(detail_df[detail_df['trans_return'] > 0])
-        loss_time = len(detail_df[detail_df['trans_return'] <= 0])
-        total_time = win_time + loss_time
-        win_percent = win_time / total_time
-        detail_df['percent_value'] = detail_df['trans_return'] + 1
-        cum_return = np.prod(detail_df['percent_value']).round(4)
-        del detail_df['percent_value']
-        try:
-            geo_avg_daily_return = round(pow(cum_return, 1 / total_period), 5) - 1
-            geo_avg_annual_return = round(pow(geo_avg_daily_return + 1, 365), 4) - 1
-        except Exception:
-            geo_avg_daily_return = np.nan
-            geo_avg_annual_return = np.nan
-        daily_risk_free_rate = round(pow(1.03, 1 / 365), 5) - 1
-        total_std = np.sum(detail_df['std'] * detail_df['period']) / total_period
-        try:
-            sharpe_ratio = (geo_avg_daily_return - daily_risk_free_rate) / total_std
-        except Exception:
-            sharpe_ratio = np.nan
-        summary = [tp_xd, tp_xu, Avg_trans_return, Avg_daily_return, Avg_annual_return, Avg_period, total_period,
-                   cum_return, sharpe_ratio, geo_avg_daily_return, geo_avg_annual_return, win_time, loss_time,
-                   total_time, win_percent]
-        return summary
-
-
-    def format_transaction_one_factor(self, results, commission, df):
-        detail_df = pd.DataFrame()
-        for i in range(len(results)):
-            print (i)
-            strats = results[i][0]
-            tp_xd = strats.params.tp_xd
-            tp_xu = strats.params.tp_xu
-            pyfoliozer = strats.analyzers.getbyname('pyfolio')
-            returns, positions, transactions, gross_lev = pyfoliozer.get_pf_items()
-            if len(transactions) <= 1:
-                continue
-            else:
-                pass
-            Buy_df = transactions[transactions['amount'] > 0]
-            Buy_df['date'] = Buy_df.index
-            Buy_df.index = np.arange(len(Buy_df))
-            Buy_df.rename(columns={'date': 'Buy_date',
-                                   'amount': 'Buy_amount',
-                                   'price': 'Buy_price',
-                                   'value': 'Buy_value'}, inplace=True)
-            Sell_df = transactions[transactions['amount'] < 0]
-            Sell_df['date'] = Sell_df.index
-            Sell_df.index = np.arange(len(Sell_df))
-            Sell_df.rename(columns={'date': 'Sell_date',
-                                    'amount': 'Sell_amount',
-                                    'price': 'Sell_price',
-                                    'value': 'Sell_value'}, inplace=True)
-            if len(Sell_df) == 0:
-                continue
-            else:
-                pass
-            transactions_df = pd.merge(Buy_df, Sell_df, left_index=True, right_index=True, how='left')
-            transactions_df = transactions_df.dropna()
-            transactions_df['std'] = transactions_df.apply(
-                lambda row: self.cal_std_from_returns(df, row['Buy_date'], row['Sell_date'])[0], axis=1).round(5)
-            transactions_df['std'] = transactions_df.apply(
-                lambda row: self.cal_std_from_returns(df, row['Buy_date'], row['Sell_date'])[1], axis=1).round(5)
-            transactions_df['tp_xd'] = tp_xd
-            transactions_df['tp_xu'] = tp_xu
-            detail_df = detail_df.append(transactions_df, ignore_index=True)
-
-        detail_df['period'] = (detail_df['Sell_date'] - detail_df['Buy_date']).apply(lambda x: x.days)
-        detail_df['Buy_comm'] = (abs(detail_df['Buy_value']) * commission).round(2)
-        detail_df['Sell_comm'] = (abs(detail_df['Sell_value']) * commission).round(2)
-        detail_df['net_profit'] = (detail_df['Buy_value'] + detail_df['Sell_value'] - \
-                                   detail_df['Buy_comm'] - detail_df['Sell_comm']).round(2)
-        detail_df['trans_return'] = (detail_df['net_profit'] / abs(detail_df['Buy_value'])).round(4)
-        detail_df['daily_return'] = (pow(detail_df['trans_return'] + 1, 1 / detail_df['period'])).round(5) - 1
-        detail_df['annual_return'] = (pow((1 + detail_df['daily_return']), 365)).round(4) - 1
-        a = detail_df.groupby(['tp_xd', 'tp_xu'])
-        summary_dict = a.apply(lambda x: self.summary(x))
-        summary_df = pd.DataFrame(
-            {'tp_xd': summary_dict.apply(lambda x: x[0]).values,  ####################################
-             'tp_xu': summary_dict.apply(lambda x: x[1]).values,  #######################################
-             'Avg_trans_return': summary_dict.apply(lambda x: x[2]).values,
-             'Avg_daily_return': summary_dict.apply(lambda x: x[3]).values,
-             'Avg_annual_return': summary_dict.apply(lambda x: x[4]).values,
-             'Avg_period': summary_dict.apply(lambda x: x[5]).values,
-             'total_period': summary_dict.apply(lambda x: x[6]).values,
-             'cum_return': summary_dict.apply(lambda x: x[7]).values,
-             'risk_adjusted_return': summary_dict.apply(lambda x: x[8]).values,
-             'geo_avg_daily_return': summary_dict.apply(lambda x: x[9]).values,
-             'geo_avg_annual_return': summary_dict.apply(lambda x: x[10]).values,
-             'win_time': summary_dict.apply(lambda x: x[11]).values,
-             'loss_time': summary_dict.apply(lambda x: x[12]).values,
-             'total_time': summary_dict.apply(lambda x: x[13]).values,
-             'win_percent': summary_dict.apply(lambda x: x[14]).values},
-            columns=['tp_xd', 'tp_xu', 'Avg_trans_return',
-                     'Avg_daily_return', 'Avg_annual_return', 'Avg_period', 'total_period',
-                     'cum_return', 'risk_adjusted_return', 'geo_avg_daily_return', 'geo_avg_annual_return', 'win_time',
-                     'loss_time', 'total_time', 'win_percent'],
-            index=range(len(summary_dict))
-            )
-
-        detail_df['Buy_price'] = detail_df['Sell_price'].round(2)
-        detail_df[['Buy_date', 'Sell_date']] = detail_df[['Buy_date', 'Sell_date']].applymap(
-            lambda n: n.strftime('%Y-%m-%d'))
-        del detail_df['symbol_y']
-        detail_df.rename(columns={'symbol_x': 'symbol'}, inplace=True)
-        col_order = ['tp_xd', 'tp_xu', 'symbol', 'Buy_amount', 'Buy_price', 'Buy_value', 'Buy_comm', 'Buy_date',
-                     'Sell_amount',
-                     'Sell_price', 'Sell_value', 'Sell_comm', 'Sell_date', 'period', 'std', 'net_profit',
-                     'trans_return',
-                     'daily_return', 'annual_return']
-        detail_df = detail_df[col_order]
-        return summary_df, detail_df
 
 
 class BacktestSummary(object):
-    def __init__(self, results, input_df, commission, save_path,groupby_list = None, ):
+    def __init__(self, results, input_df, commission, save_path, groupby_list = None):
         self.groupby_list = groupby_list
         self.results = results
         self.input_df = input_df
@@ -715,7 +543,7 @@ class BacktestSummary(object):
         df1.to_csv(input_data)
 
 
-    def analyze_and_save(self, input_df=True):
+    def analyze_and_save_single(self, input_df=True):
         detail_df = self.format_transaction()
         summary_df = self.summary(detail_df, if_list=False)
         df_empty = pd.DataFrame()
@@ -729,6 +557,78 @@ class BacktestSummary(object):
         summary_df.to_excel(writer, sheet_name='summary')
         writer.save()
         writer.close()
+
+
+    def analyze_and_save_multi(self, input_df=True):
+        detail_df = self.format_transaction()
+        summary_df = self.summary(detail_df, if_list=False)
+        df_empty = pd.DataFrame()
+        df_empty.to_excel(self.save_path)
+        book = load_workbook(self.save_path)
+        writer = pd.ExcelWriter(self.save_path, engine='openpyxl')
+        writer.book = book
+        if input_df:
+            self.input_df.to_excel(writer, sheet_name='input_df')
+        detail_df.to_excel(writer, sheet_name='detail_transaction')
+        summary_df.to_excel(writer, sheet_name='summary')
+        writer.save()
+        writer.close()
+
+
+
+class Backtesting(object):
+    '''
+    strategy: backtrader object;
+    dict: backtest_data
+
+    '''
+    def __init__(self, MyStrategy, input_dict):
+        self.MyStrategy = MyStrategy
+        self.input_dict = input_dict
+
+
+    def Backtest(self):
+        mypath = os.path.dirname(sys.modules['__main__'].__file__)
+        # file_name = "600276SH_for_backtest"
+        file_name = 'DualAttnRNN_SH_index_all_for_backtest'
+        data_path = mypath + "/data/{}.csv".format(file_name)
+        summary_path = mypath + "/summary_excel/{}_summary.xlsx".format(file_name)
+        ticker_data_path = data_path
+        commission = 0.002
+        cerebro = Cerebro(maxcpus=2)
+        # Add a strategy
+        cerebro.addstrategy(self.MyStrategy)
+        # Fetch_raw_data(ticker_data_path)
+        df = pd.read_csv(ticker_data_path)
+        data = GenericCSV_OTri(dataname=ticker_data_path, )
+        # Add the Data Feed to Cerebro
+        cerebro.adddata(data, name=file_name)
+        cerebro.addanalyzer(bt.analyzers.PyFolio)
+        cerebro.addanalyzer(bt.analyzers.TradeAnalyzer)
+        cerebro.addanalyzer(Transactions)
+        cerebro.broker.setcash(10000000)
+        # cerebro.addsizer(bt.sizers.FixedSize, stake=10000)
+        cerebro.broker.setcommission(commission=commission)
+        print('Starting Portfolio Value: %.2f' % cerebro.broker.getvalue())
+        results = cerebro.run()
+        # strat = results[0]
+        cerebro.plot()
+        '''
+        Three input for BecktestSummary:
+        results: result of cerebro.run()
+        commission rate
+        df: the input dataframe, backtesting dataframe
+        save_path: the path to save the summary path
+        groupby_list: when using optstrategy, add this para, which is the para name list we want to optimize
+        '''
+        Backtest_summary = BacktestSummary(results=results,
+                                           input_df=df,
+                                           commission=0.002,
+                                           save_path=summary_path,
+                                           groupby_list=None)
+        Backtest_summary.analyze_and_save()
+
+
 
 
 

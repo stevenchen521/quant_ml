@@ -24,8 +24,7 @@ class Market(object):
         CSV = 'CSV'
         MONGODB = 'MongoDB'
 
-    def __init__(self, codes, start_date="2008-01-01", end_date="2018-01-01", col_y = "close" ,**options):
-
+    def __init__(self, codes, start_date="2008-01-01", end_date="2018-01-01", col_y = "close" , **options):
         # Initialize codes.
         self.codes = codes
         self.index_codes = []
