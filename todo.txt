@@ -1,0 +1,6 @@
+TODO:
+1. Enhance the Preprocess module, add input and output file paths.
+2. Introduce the concept of profile that consists of:
+    a) Preprocess strategy
+    b) Back testing strategy
+    c) Algorithms with parameters
