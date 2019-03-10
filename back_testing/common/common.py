@@ -1,6 +1,7 @@
 import numpy as np
 import matplotlib as mlb
 mlb.use("TkAgg")
+from datetime import datetime
 import backtrader as bt
 import pandas as pd
 from backtrader.utils.py3 import items, iteritems
@@ -10,7 +11,8 @@ import sys
 
 
 class BacktestSummary(object):
-    def __init__(self, name ,results, input_df, commission, save_path, groupby_list=None):
+    def __init__(self, domain_name, name , results, input_df, commission, save_path, groupby_list=None):
+        self.domain_name = domain_name
         self.groupby_list = groupby_list
         self.results = results
         self.input_df = input_df
@@ -20,8 +22,8 @@ class BacktestSummary(object):
 
     @staticmethod
     def cal_std_from_returns(df, Buy_date, Sell_date):
-        df.Date = pd.to_datetime(df.Date)
-        return_df = df[(df.Date >= Buy_date) & (df.Date <= Sell_date)]['close'].pct_change()
+        df.date = pd.to_datetime(df.date)
+        return_df = df[(df.date >= Buy_date) & (df.date <= Sell_date)]['close'].pct_change()
         try:
             std = np.nanstd(return_df)
         except Exception:
@@ -39,7 +41,7 @@ class BacktestSummary(object):
             for v2 in v:
                 txs.append([k] + v2)
 
-        cols = ['date', 'amount', 'price', 'sid', 'symbol', 'value', 'close_type']  # headers are in the first entry
+        cols = ['date', 'amount', 'price', 'sid', 'symbol', 'value']  # headers are in the first entry
         transactions = pd.DataFrame.from_records(txs, index=range(len(txs)), columns=cols)
         del transactions['sid']
         return transactions
@@ -111,9 +113,9 @@ class BacktestSummary(object):
 
     def format_transaction(self):
         last_close_price = self.input_df['close'].tail(1).iloc[0]
-        last_date = pd.to_datetime(self.input_df['Date'].tail(1).iloc[0])
+        last_date = pd.to_datetime(self.input_df['date'].tail(1).iloc[0])
         detail_df = pd.DataFrame()
-        end_date = self.input_df.tail(1).Date.values
+        end_date = self.input_df.tail(1).date.values
         # for i in [35]:
         for i in range(len(self.results)):
             if len(self.results) > 1:
@@ -131,7 +133,7 @@ class BacktestSummary(object):
                                        'amount': 'Buy_amount',
                                        'price': 'Buy_price',
                                        'value': 'Buy_value'}, inplace=True)
-                del Buy_df['close_type']
+                # del Buy_df['close_type']
 
             Sell_df = transactions[transactions['amount'] < 0]
             if len(Sell_df) == 0:
@@ -153,8 +155,8 @@ class BacktestSummary(object):
                     'Sell_date': last_date,
                     'Sell_amount': -transactions_df['Buy_amount'].iloc[0],
                     'Sell_price': last_close_price,
-                    'Sell_value': last_close_price * transactions_df['Buy_amount'].iloc[0],
-                    'close_type': 'Not_close'
+                    'Sell_value': last_close_price * transactions_df['Buy_amount'].iloc[0]
+                    # 'close_type': 'Not_close'
                 }
                 transactions_df.fillna(value=nan_fill, inplace=True)
 
@@ -195,14 +197,14 @@ class BacktestSummary(object):
         # detail_df.rename(columns={'symbol_x': 'symbol'}, inplace=True)
         col_order = ['symbol', 'Buy_amount', 'Buy_price', 'Buy_value', 'Buy_comm', 'Buy_date', 'Sell_amount',
                      'Sell_price', 'Sell_value', 'Sell_comm', 'Sell_date', 'period', 'std', 'net_profit',
-                     'trans_return',
-                     'daily_return', 'annual_return', 'close_type']
+                     'trans_return', 'daily_return', 'annual_return']
         if self.groupby_list == None:
             pass
         else:
             col_order = self.groupby_list + col_order
         detail_df = detail_df[col_order]
         return detail_df
+
 
     @staticmethod
     def Fetch_raw_data(input_data):
@@ -214,6 +216,7 @@ class BacktestSummary(object):
         col_order = ['open', 'high', 'low', 'close', 'volume', 'openinterest', 'OTri', 'Tri']
         df1 = df1[col_order]
         df1.to_csv(input_data)
+
 
     def analyze_and_save_single(self, input_df=True):
         detail_df = self.format_transaction()
@@ -231,23 +234,11 @@ class BacktestSummary(object):
         writer.close()
 
 
-    def analyze_and_save_multi(self, input_df=True):
-        detail_df = self.format_transaction()
-        summary_df = self.summary(detail_df, if_list=False)
-        df_empty = pd.DataFrame()
-        df_empty.to_excel(self.save_path)
-        book = load_workbook(self.save_path)
-        writer = pd.ExcelWriter(self.save_path, engine='openpyxl')
-        writer.book = book
-        if input_df:
-            self.input_df.to_excel(writer, sheet_name='input_df')
-        detail_df.to_excel(writer, sheet_name='detail_transaction')
-        summary_df.to_excel(writer, sheet_name='summary')
-        writer.save()
-        writer.close()
 
 
-class Backtesting(object):
+
+
+class BackTesting(object):
     '''
     Mystrategy: backtrader Mystrategy object;
     input_dict: backtest_data, key is the name of each dataframe
@@ -255,38 +246,97 @@ class Backtesting(object):
 
     '''
 
-    def __init__(self, MyStrategy, input_dict, domain_name, commission = 0.002, maxcpu = 2, initalcash = 10000000):
+    def __init__(self, MyStrategy, input_dict, domain_name, target_col, label, save_input_dict=False, commission=0.002, maxcpu=2,
+                 initialcash = 10000000):
         self.MyStrategy = MyStrategy
         self.input_dict = input_dict
-        self.mypath = os.path.dirname(sys.modules['__main__'].__file__)
         self.domain_name = domain_name
         self.commission = commission
         self.maxcpu = maxcpu
-        self.summary_path = self.mypath + "/summary_excel/{}_summary.xlsx".format(self.domain_name)
-        self.initalcash = initalcash
+        self.target_col = target_col
+        self.label = label
+        self.initialcash = initialcash
+        self.detail_df = pd.DataFrame()
+        self.summary_df = pd.DataFrame()
+        self.time = datetime.now().strftime("%Y-%m-%d_%H:%M:%S %f")
+        self.summary_path = "../../back_testing/summary_excel/{}_summary_{}.xlsx".format(self.domain_name, self.time)
+        self.save_input_dict = save_input_dict
+        self.default_col = ['date', 'open', 'high', 'low', 'close', 'volume', 'openinterest']
+        self.backtest_col = self.default_col + [self.target_col, self.label]
+
+    '''
+    input_dict: default, false, if True, save input dict into summary excel
+    '''
+
+    def save(self):
+        df_empty = pd.DataFrame()
+        df_empty.to_excel(self.summary_path)
+        book = load_workbook(self.summary_path)
+        writer = pd.ExcelWriter(self.summary_path, engine='openpyxl')
+        writer.book = book
+        self.detail_df.to_excel(writer, sheet_name='detail_transaction')
+        self.summary_df.to_excel(writer, sheet_name='summary')
+        if self.save_input_dict:
+            for key, df in self.input_dict.items():
+                sheet_name = key
+                df.to_excel(writer, sheet_name=sheet_name)
+        writer.save()
+        writer.close()
 
 
 
     def backtest(self):
+        class PandasData(bt.feeds.PandasData):
+            lines = (self.target_col, self.label)
+            '''
+            The ``dataname`` parameter inherited from ``feed.DataBase`` is the pandas
+            DataFrame
+            '''
+            params = (
+                # Possible values for datetime (must always be present)
+                #  None : datetime is the "index" in the Pandas Dataframe
+                #  -1 : autodetect position or case-wise equal name
+                #  >= 0 : numeric index to the colum in the pandas dataframe
+                #  string : column name (as index) in the pandas dataframe
+                ('datetime', 'date'),
 
-        for key in self.input_dict.keys:
-            cerebro = bt.Cerebro(maxcpu=self.maxcpu)
+                # Possible values below:
+                #  None : column not present
+                #  -1 : autodetect position or case-wise equal name
+                #  >= 0 : numeric index to the colum in the pandas dataframe
+                #  string : column name (as index) in the pandas dataframe
+                ('open', -1),
+                ('high', -1),
+                ('low', -1),
+                ('close', -1),
+                ('volume', -1),
+                ('openinterest', -1),
+                (self.target_col, self.target_col),
+                (self.label, self.label)
+            )
+
+
+        for key in self.input_dict.keys():
+            cerebro = bt.Cerebro(maxcpus =self.maxcpu)
             # Add a strategy
             cerebro.addstrategy(self.MyStrategy)
             # Fetch_raw_data(ticker_data_path)
-            data = self.input_dict.key
+            dataframe = self.input_dict[key]
+            self.unique_col_name = [x for x in list(dataframe.columns) if x not in self.default_col]
+            dataframe = dataframe[self.backtest_col]
+            dataframe['date'] = dataframe['date'].apply(lambda x: pd.to_datetime(x))
+            data = PandasData(dataname=dataframe)
             # Add the Data Feed to Cerebro
-            cerebro.adddata(data, name=key)
+            dataname = self.domain_name + "_" + key
+            cerebro.adddata(data, name=dataname)
             cerebro.addanalyzer(bt.analyzers.PyFolio)
             cerebro.addanalyzer(bt.analyzers.TradeAnalyzer)
             cerebro.addanalyzer(bt.analyzers.Transactions)
-            cerebro.broker.setcash(self.initalcash)
+            cerebro.broker.setcash(self.initialcash)
             # cerebro.addsizer(bt.sizers.FixedSize, stake=10000)
             cerebro.broker.setcommission(commission=self.commission)
             print('Starting Portfolio Value: %.2f' % cerebro.broker.getvalue())
             results = cerebro.run()
-            # strat = results[0]
-            # cerebro.plot()
             '''
             Three input for BecktestSummary:
             results: result of cerebro.run()
@@ -295,15 +345,19 @@ class Backtesting(object):
             save_path: the path to save the summary path
             groupby_list: when using optstrategy, add this para, which is the para name list we want to optimize
             '''
+
             Backtest_summary = BacktestSummary(results=results,
-                                               input_df=data,
+                                               input_df=dataframe,
+                                               domain_name=self.domain_name,
                                                name=key,
                                                commission=self.commission,
                                                save_path=self.summary_path,
                                                groupby_list=None)
-            Backtest_summary.analyze_and_save_multi()
-
-
+            detail_df_temp = Backtest_summary.format_transaction()
+            summary_df_temp = Backtest_summary.summary(detail_df_temp, if_list=False)
+            self.detail_df = self.detail_df.append(detail_df_temp)
+            self.summary_df = self.summary_df.append(summary_df_temp)
+        self.save()
 
 
 
