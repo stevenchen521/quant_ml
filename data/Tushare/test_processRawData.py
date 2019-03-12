@@ -66,6 +66,12 @@ class TestProcessRawData(TestCase):
         df1.to_csv("..\..\data\Account_number.csv")
 
 
+    def test_get_daily_basic(self):
+        pro = ts.pro_api()
+        df = pro.daily_basic(ts_code='603993.SH', trade_date='20180726',
+                             fields='ts_code,trade_date,turnover_rate,volume_ratio,pe,pb')
+        print(df)
+
 
 
     def test_merge_data(self):
@@ -103,7 +109,4 @@ class TestProcessRawData(TestCase):
         df_final = df_final[['open', 'high', 'low', 'close', 'volume', 'on', '1m', '6m', '1y']]
         df_final = df_final.dropna(how='any')
         df_final.to_csv('../../data/SH_index_all.csv')
-
-
-
 

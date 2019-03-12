@@ -8,6 +8,7 @@ from backtrader.utils.py3 import items, iteritems
 from openpyxl import load_workbook
 import os
 import sys
+import re
 
 
 class BacktestSummary(object):
@@ -258,8 +259,10 @@ class BackTesting(object):
         self.initialcash = initialcash
         self.detail_df = pd.DataFrame()
         self.summary_df = pd.DataFrame()
-        self.time = datetime.now().strftime("%Y-%m-%d_%H:%M:%S %f")
-        self.summary_path = "../../back_testing/summary_excel/{}_summary_{}.xlsx".format(self.domain_name, self.time)
+        self.time = datetime.now().strftime("%Y-%m-%d_%H_%M")
+        self.project_dir = os.getcwd()
+        project_root = re.findall(r'.*quant_ml', self.project_dir)[0]
+        self.summary_path = project_root + "/back_testing/summary_excel/{}_summary_{}.xlsx".format(self.domain_name, self.time)
         self.save_input_dict = save_input_dict
         self.default_col = ['date', 'open', 'high', 'low', 'close', 'volume', 'openinterest']
         self.backtest_col = self.default_col + [self.target_col, self.label]
