@@ -71,6 +71,10 @@ def catch_exception(logger):
     return decorated
 
 
+def get_timestamp():
+    import calendar;
+    import time;
+    return calendar.timegm(time.gmtime())
 
 
 LOGGER = get_logger(__name__)
@@ -81,7 +85,9 @@ def div_zero():
 
 if __name__ == '__main__':
     # LOGGER.error("this is a test")
-    setup_logging()
-    print(div_zero())
+    # setup_logging()
+    # print(div_zero())
 #     print('tes')
 #     print(__name__.split('.')[0])
+    print(get_timestamp())
+

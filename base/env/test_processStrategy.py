@@ -4,7 +4,7 @@ import base.env.pre_process as pre_process
 import pandas as pd
 from sklearn.preprocessing import MinMaxScaler
 from helper.util import get_attribute
-from base.env.pre_process_conf import active_stragery
+from base.env.pre_process_conf import active_stragery, get_strategy_analyze
 import base.env.pre_process
 
 
@@ -12,7 +12,7 @@ class TestProcessStrategy(TestCase):
 
     def test_get_active_strategy(self):
         self.action_fetch, self.action_pre_analyze, self.indicators, self.action_post_analyze, self._label = \
-            pre_process.get_active_strategy()
+            pre_process.get_active_strategy(strategy=None)
 
         self.assertIsNotNone(self.action_fetch)
         self.assertIsNotNone(self.action_pre_analyze)
@@ -37,3 +37,8 @@ class TestProcessStrategy(TestCase):
 
 
         # print(class_post_analyze.fire(None, None))
+
+
+    def test_get_strategy_analyze(self):
+
+        self.assertIsNotNone(get_strategy_analyze(get_attribute(active_stragery)))

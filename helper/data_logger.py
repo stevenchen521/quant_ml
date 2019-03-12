@@ -37,7 +37,8 @@ def generate_algorithm_logger(model_name):
     algorithm_log_fh = logging.FileHandler(os.path.join(LOGS_DIR, algorithm_log_path))
     algorithm_log_fh.setLevel(logging.DEBUG)
     algorithm_log_fh.setFormatter(logging.Formatter('[{}] {}'.format('%(asctime)s', '%(message)s')))
-    algorithm_logger.addHandler(algorithm_log_sh)
-    algorithm_logger.addHandler(algorithm_log_fh)
+    if not algorithm_logger.handlers:
+        algorithm_logger.addHandler(algorithm_log_sh)
+        algorithm_logger.addHandler(algorithm_log_fh)
 
     return algorithm_logger

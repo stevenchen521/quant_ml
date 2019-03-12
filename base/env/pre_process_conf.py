@@ -1,5 +1,13 @@
 
-# input_selector = '$'
+import os
+
+def get_strategy_analyze(strategy):
+    return strategy['analyze']
+
+
+def get_folder(file):
+    return os.sep.join(file.split(os.sep)[0:-1])
+
 
 """
 analyze format: 'method'|'input columns'|'method parameters'
@@ -43,7 +51,7 @@ strategy_nasdaq = {
                 'stoch|high_low_close|14_3',
                 'trend|close|5_5_20'],
     'post_analyze': 'PostAnalyzeNASDAQ',
-    'label': 'trend_5_5_20'
+    'label': 'trend|close|5_5_20'
     # 'post_analyze': 'PostAnalyzeDefault',
 }
 
@@ -54,8 +62,9 @@ second one: trend bar length,
 third one: future bar length, focus on return in future length
 '''
 strategy_SH_index = {
+    'name':'strategy_SH_index',
     'module': 'base.env.pre_process',
-    'source': '../../data/SH_index_all.csv',
+    'source': "{}/../../data/SH_index.csv".format(get_folder(__file__)),
     'fetch': 'FetchCSVSingle',
     'pre_analyze': 'PreAnalyzeDefault',
     'analyze': [
@@ -70,7 +79,7 @@ strategy_SH_index = {
                 'stoch|high_low_close|14_5',    # key indicator
                 'trend|close|5_5_20'],
     'post_analyze': 'PostAnalyzeNASDAQ',
-    'label': 'trend_5_5_20'
+    'label': 'trend|close|5_5_20'
     # 'post_analyze': 'PostAnalyzeDefault',
 }
 
@@ -85,5 +94,6 @@ strategy_SH_index = {
 # }
 
 
-# active_stragery = strategy_nasdaq
 active_stragery = strategy_SH_index
+# active_stragery = 'base.env.pre_process_conf.strategy_SH_index'
+

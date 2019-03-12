@@ -53,11 +53,11 @@ class TestDualAttnRnn(TestCase):
     def test_sh_index(self):
         mode = self.args.mode
         # mode = "test"
-        codes = ["SH_index_all"]
+        codes = ["SH_index"]
         market = self.args.market
         # train_steps = args.train_steps
         # train_steps = 5000
-        train_steps = 30000
+        train_steps = 3000
         # training_data_ratio = 0.98
         training_data_ratio = self.args.training_data_ratio
 
@@ -70,8 +70,6 @@ class TestDualAttnRnn(TestCase):
             "training_data_ratio": training_data_ratio,
         })
 
-
-
         model_name = os.path.basename(__file__).split('.')[0]
         print(os.path.join(CHECKPOINTS_DIR, "SL", model_name, market, "model"))
         print(os.path.join(CHECKPOINTS_DIR, "SL", model_name, market, "summary"))
@@ -82,9 +80,9 @@ class TestDualAttnRnn(TestCase):
             # "learning_rate": 0.001,
             "layer_size": 2,
             # "keep_prob": 0.98,
-            "enable_saver": False,
+            "enable_saver": True,
             "train_steps": train_steps,
-            "enable_summary_writer": False,
+            "enable_summary_writer": True,
             "save_path": os.path.join(CHECKPOINTS_DIR, "SL", model_name, market, "model"),
             "summary_path": os.path.join(CHECKPOINTS_DIR, "SL", model_name, market, "summary"),
         })
