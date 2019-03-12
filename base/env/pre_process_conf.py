@@ -16,6 +16,7 @@ analyze format: 'method'|'input columns'|'method parameters'
 """
 
 strategy_play = {
+    'name':'strategy_play',
     'module': 'base.env.pre_process',
     'source': '../../data/nasdaq.csv',
     'fetch': 'FetchCSVSingle',
@@ -37,6 +38,7 @@ strategy_play = {
 
 
 strategy_nasdaq = {
+    'name':'strategy_nasdaq',
     'module': 'base.env.pre_process',
     'source': '../../data/nasdaq.csv',
     'fetch': 'FetchCSVSingle',
