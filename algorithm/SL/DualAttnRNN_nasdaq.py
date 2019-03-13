@@ -109,7 +109,7 @@ def main(args):
     market = args.market
     # train_steps = args.train_steps
     # train_steps = 5000
-    train_steps = 30000
+    train_steps = 2000
     # training_data_ratio = 0.98
     training_data_ratio = args.training_data_ratio
 

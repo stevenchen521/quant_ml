@@ -36,9 +36,6 @@ class ProcessRawData(object):
 
 
 
-    @staticmethod
-    def process_data_from_BBG(df1, df2, save_code, add_col):
-        eps = df2[add_col]
 
 
 

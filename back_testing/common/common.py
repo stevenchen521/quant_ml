@@ -8,6 +8,7 @@ from backtrader.utils.py3 import items, iteritems
 from openpyxl import load_workbook
 import os
 import sys
+import re
 
 
 class BacktestSummary(object):
@@ -53,6 +54,7 @@ class BacktestSummary(object):
 
     def summary(self, detail_df, if_list):
         value_list = []
+        key = detail_df['symbol'].iloc[0]
         Avg_trans_return = round(detail_df['trans_return'].mean(), 4)
         Avg_daily_return = round(detail_df['daily_return'].mean(), 4)
         Avg_annual_return = round(detail_df['annual_return'].mean(), 4)
@@ -78,11 +80,12 @@ class BacktestSummary(object):
         except Exception:
             sharpe_ratio = np.nan
         if if_list:
-            summary = [Avg_trans_return, Avg_daily_return, Avg_annual_return, Avg_period, total_period, cum_return,
+            summary = [key, Avg_trans_return, Avg_daily_return, Avg_annual_return, Avg_period, total_period, cum_return,
                        sharpe_ratio,
                        geo_avg_daily_return, geo_avg_annual_return, win_time, loss_time, total_time, win_percent]
         else:
-            summary = pd.DataFrame({'Avg_trans_return': Avg_trans_return,
+            summary = pd.DataFrame({'key': key,
+                                    'Avg_trans_return': Avg_trans_return,
                                     'Avg_daily_return': Avg_daily_return,
                                     'Avg_annual_return': Avg_annual_return,
                                     'Avg_period': Avg_period,
@@ -258,8 +261,10 @@ class BackTesting(object):
         self.initialcash = initialcash
         self.detail_df = pd.DataFrame()
         self.summary_df = pd.DataFrame()
-        self.time = datetime.now().strftime("%Y-%m-%d_%H:%M:%S %f")
-        self.summary_path = "../../back_testing/summary_excel/{}_summary_{}.xlsx".format(self.domain_name, self.time)
+        self.time = datetime.now().strftime("%Y-%m-%d_%H_%M")
+        self.project_dir = os.getcwd()
+        project_root = re.findall(r'.*quant_ml', self.project_dir)[0]
+        self.summary_path = project_root + "/back_testing/summary_excel/{}_summary_{}.xlsx".format(self.domain_name, self.time)
         self.save_input_dict = save_input_dict
         self.default_col = ['date', 'open', 'high', 'low', 'close', 'volume', 'openinterest']
         self.backtest_col = self.default_col + [self.target_col, self.label]
@@ -278,7 +283,10 @@ class BackTesting(object):
         self.summary_df.to_excel(writer, sheet_name='summary')
         if self.save_input_dict:
             for key, df in self.input_dict.items():
-                sheet_name = key
+                total_key = self.domain_name + '_' + key
+                df['key_name'] = total_key
+                annual_return = self.summary_df[self.summary_df['key'] == total_key]['geo_avg_annual_return'].iloc[0]
+                sheet_name = self.domain_name + str(round(annual_return, 4))
                 df.to_excel(writer, sheet_name=sheet_name)
         writer.save()
         writer.close()
@@ -355,6 +363,7 @@ class BackTesting(object):
                                                groupby_list=None)
             detail_df_temp = Backtest_summary.format_transaction()
             summary_df_temp = Backtest_summary.summary(detail_df_temp, if_list=False)
+
             self.detail_df = self.detail_df.append(detail_df_temp)
             self.summary_df = self.summary_df.append(summary_df_temp)
         self.save()
