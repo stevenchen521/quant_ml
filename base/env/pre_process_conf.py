@@ -64,9 +64,9 @@ second one: trend bar length,
 third one: future bar length, focus on return in future length
 '''
 strategy_SH_index = {
-    'name':'strategy_SH_index',
+    'name': 'strategy_SH_index',
     'module': 'base.env.pre_process',
-    'source': "{}/../../data/SH_index.csv".format(get_folder(__file__)),
+    'source': "{}/../../data/SH_index_all.csv".format(get_folder(__file__)),
     'fetch': 'FetchCSVSingle',
     'pre_analyze': 'PreAnalyzeDefault',
     'analyze': [

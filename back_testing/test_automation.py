@@ -14,3 +14,5 @@ class TestAutomation(TestCase):
 
     def test_input_strategy_setup(self):
         input_strategy_setup()
+
+

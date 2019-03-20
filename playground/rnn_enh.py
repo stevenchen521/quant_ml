@@ -72,7 +72,7 @@ class MultiInputLSTMCell(BasicLSTMCell):
 
         self._b_attn = self.add_variable(
             _BIAS_ATTN,
-            shape=[self._input_divider ],    # for every input piece, we need a bias_alpha
+            shape=[self._input_divider],    # for every input piece, we need a bias_alpha
             initializer=init_ops.zeros_initializer(dtype=self.dtype))
 
         self.built = True

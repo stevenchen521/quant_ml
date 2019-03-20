@@ -9,8 +9,6 @@ from sklearn.preprocessing import MinMaxScaler
 # from algorithm.SL.DualAttnRNN import Algorithm
 from helper.args_parser import model_launcher_parser
 from helper.util import get_timestamp, get_attribute
-
-
 from base.env.pre_process_conf import active_stragery, get_strategy_analyze
 
 
@@ -139,6 +137,4 @@ class Automation:
                                    target_col='y',
                                    label='label')
         back_testing.backtest()
-
-
 
