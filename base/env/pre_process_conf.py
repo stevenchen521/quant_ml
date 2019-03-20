@@ -69,16 +69,7 @@ strategy_SH_index = {
     'source': "{}/../../data/SH_index_all.csv".format(get_folder(__file__)),
     'fetch': 'FetchCSVSingle',
     'pre_analyze': 'PreAnalyzeDefault',
-    'analyze': [
-                # 'ma|close|10_0', # sma
-                # 'ma|close|10_1', # ema
-                # 'ma|close|10_2', # wma
-                # 'ma|close|10_3', # dema
-                # 'ma|close|10_4', # tema
-                # 'rsi|close|14',
-                # 'macd|close|12_26_9',
-                # 'minus_dm|high_low|14', 'plus_dm|high_low|14', 'adx|high_low_close|14', # Directional Movement Index(DMI)
-                'stoch|high_low_close|14_5',    # key indicator
+    'analyze': ['stoch|high_low_close|14_5',    # key indicator
                 'trend|close|5_5_20'],
     'post_analyze': 'PostAnalyzeNASDAQ',
     'label': 'trend|close|5_5_20'

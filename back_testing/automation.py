@@ -44,11 +44,9 @@ def input_strategy_setup(input_strategy):
     strategy = active_stragery if input_strategy is None else input_strategy
     label = active_stragery['label']
     is_ori_label = True if label.find("|") == -1 else False
-
     analyze = get_strategy_analyze(strategy)
     for _, val in enumerate(analyze):
         strategy = strategy.copy()
-
         if val != label and is_ori_label is False:
             strategy['analyze'] = [val, label]
         else:
@@ -94,7 +92,6 @@ def bt_strategy_setup():
 
 
 class Automation:
-
     def __init__(self, input_strategy_setup, input_strategy, market_setup, algorithm_setup, bt_strategy_setup):
         self._args = model_launcher_parser.parse_args()
         self._input_strategy_origin = input_strategy

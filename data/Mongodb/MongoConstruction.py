@@ -54,17 +54,25 @@ class TushareMongo(object):
     def download_daily_price(self):
         pro = ts.pro_api()
         mongo = MongoBase(db='ChinaStockData', collection='ts_code')
-        results = mongo.collection.find({}, {'ts_code':1, '_id':0})
+        results = mongo.collection.find({}, {'ts_code': 1, '_id': 0})
         code_df = pd.DataFrame(list(results))
         print(len(code_df))
         for index, row in code_df.iterrows():
             ts_code = row['ts_code']
             mongo = MongoBase(db='ChinaStockData', collection=ts_code)
             df = pro.query('daily', ts_code=ts_code, start_date='20000101', end_date=self.today)
+            mongo.collection.drop()
             mongo.collection.insert_many(json.loads(df.to_json(orient='records')))
             mongo.closeDB()
             time.sleep(0.3)
             print(index)
+
+
+    # def download_sector_index(self):
+
+
+
+
 
 
 
