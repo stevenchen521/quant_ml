@@ -7,17 +7,21 @@ import pandas as pd
 
 
 def bt_strategy_setup():
-    from back_testing.OTr_back_test import MyStrategy
+    from back_testing.data_mining.strategy import MyStrategy
     return MyStrategy
+
+def bt_datafeed_setup():
+    from back_testing.data_mining.strategy import PandasData
+    return PandasData
 
 
 class DataMiningAutomation(object):
-    def __init__(self, delta, step, strategy, start_date, end_date, bt_strategy_setup):
+    def __init__(self, delta, step, strategy, start_date, end_date, bt_strategy_setup, bt_datafeed_setup):
         self._strategy_dict = self.manipulate_strategy(strategy, delta, step)
         self._start_date = start_date
         self._end_date = end_date
-        self._bt_strategy_setup = bt_strategy_setup
         self._bt_strategy = bt_strategy_setup()
+        self._bt_datafeed = bt_datafeed_setup()
 
     def manipulate_strategy(self, strategy, delta, step):
 
@@ -93,21 +97,24 @@ class DataMiningAutomation(object):
     def format_data_dict(self):
         data_dict = {}
         for key, value in self._strategy_dict.items():
-            dates, pre_frames, origin_frames, post_frames = \
+            dates, _, _, post_frames = \
                 pre_process.ProcessStrategy(  # action_fetch, action_pre_analyze, action_analyze, action_post_analyze,
                     ['SH_index'], self._start_date, self._end_date, MinMaxScaler(), value).process()
-            data_dict[key] = post_frames
+            df_temp = post_frames['SH_index']
+            df_temp['openinterest'] = 0
+            df_temp.index = df_temp.index.set_names(['date'])
+            data_dict[key] = post_frames['SH_index']
         return data_dict
 
 
     def process(self):
         df_dict = self.format_data_dict()
         back_testing = BackTesting(MyStrategy=self._bt_strategy,
+                                   Datafeed= self._bt_datafeed,
                                    input_dict=df_dict,
                                    domain_name="SH_index",
                                    save_input_dict=True,
-                                   target_col='y',
-                                   label='label')
+                                   summary_path='summary.xlsx')
         back_testing.backtest()
 
 if __name__ == '__main__':
@@ -116,7 +123,8 @@ if __name__ == '__main__':
                              strategy=strategy_data_mining,
                              start_date="2008-01-01",
                              end_date="2019-02-01",
-                             bt_strategy_setup= bt_strategy_setup)
+                             bt_strategy_setup= bt_strategy_setup,
+                             bt_datafeed_setup=bt_datafeed_setup)
     D.process()
 
 
