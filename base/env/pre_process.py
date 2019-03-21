@@ -175,6 +175,15 @@ def get_active_strategy(strategy):
     action_post_analyze = get_attribute('.'.join([module, post_analyze]))
     return action_fetch, action_pre_analyze, indicators, action_post_analyze, label
 
+def get_strategy_element(strategy, element_name):
+    real_strategy = active_stragery if strategy is None else strategy
+    return real_strategy.get(element_name)
+
+def set_strategy_element(strategy, element_name, value):
+    real_strategy = active_stragery if strategy is None else strategy
+    real_strategy[element_name] = value
+    return real_strategy
+
 
 class ProcessStrategy(object):
 
