@@ -44,22 +44,28 @@ class DataMiningAutomation(object):
             analyze_parts = analyze.split("|")
             parameters_part = analyze_parts[len(analyze_parts) - 1]
             parameters = [int(para) for para in parameters_part.split("_")]
+
+            # original input rank
             parameters_rank = rank(parameters)
             for parameter in parameters:
+                # for every parameter, calculate the low and high boundaries.
                 block = int((parameter / 2) * delta)
                 boundary_high = parameter + block
                 boundary_low = 1 if parameter - block <= 0 else parameter - block
+                # get the parameter variable range.
                 parameters_range.append((boundary_low, boundary_high, step))
 
+            # calculate the list size of parameters compositions
             para_list_size = 1
             for range_para in parameters_range:
                 para_list_size *= len(range(range_para[0], range_para[1], range_para[2]))
 
-            # now we have the parameter range
+            # initialize the list for every parameters composition
             parameters_list = list()
             for _ in range(para_list_size):
                 parameters_list.append(list())
 
+            # iterate all the parameters compositions and put them to the list
             for range_para in parameters_range:
                 cursor = 0
                 while cursor < len(parameters_list):
@@ -69,7 +75,7 @@ class DataMiningAutomation(object):
                         parameters_list[cursor].append(val)
                         cursor += 1
 
-            parameters_list_final = list()
+            # for every candidate in the list, calculate the rank, which should be the same with the original input.
             for candidate in parameters_list:
                 r = rank(candidate)
                 if parameters_rank == r:
