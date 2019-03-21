@@ -79,26 +79,26 @@ class DataMiningAutomation(object):
 
                     analyze_str = "|".join(analyze_parts)
 
-                    pre_process.set_strategy_element(strategy_ouput, "analyze", analyze_str)
+                    pre_process.set_strategy_element(strategy_ouput, "analyze", [analyze_str])
                     strategy_dict[analyze_str] = strategy_ouput
 
         return strategy_dict
 
-    # def format_data_dict(self):
-    #     data_dict = {}
-    #     for key, value in self._strategy_dict.items():
-    #         dates, pre_frames, origin_frames, post_frames = \
-    #             pre_process.ProcessStrategy(  # action_fetch, action_pre_analyze, action_analyze, action_post_analyze,
-    #                 ['SH_index_all'], self._start_date, self._end_date, MinMaxScaler(), value).process()
-    #         data_dict[key] = origin_frames
-    #     return data_dict
+    def format_data_dict(self):
+        data_dict = {}
+        for key, value in self._strategy_dict.items():
+            dates, pre_frames, origin_frames, post_frames = \
+                pre_process.ProcessStrategy(  # action_fetch, action_pre_analyze, action_analyze, action_post_analyze,
+                    ['SH_index'], self._start_date, self._end_date, MinMaxScaler(), value).process()
+            data_dict[key] = post_frames
+        return data_dict
 
 
     def process(self):
-        df_dict = self._strategy_dict
+        df_dict = self.format_data_dict()
         back_testing = BackTesting(MyStrategy=self._bt_strategy,
                                    input_dict=df_dict,
-                                   domain_name="SH_index_all",
+                                   domain_name="SH_index",
                                    save_input_dict=True,
                                    target_col='y',
                                    label='label')
