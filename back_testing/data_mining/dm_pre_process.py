@@ -14,7 +14,7 @@ strategy_data_mining = {
                 'trend|close|3_3_6',
                 ],
     'post_analyze': 'PostAnalyzeDataMining',
-    'label': 'trend_3_5_20'
+    'label': ""
 }
 
 
