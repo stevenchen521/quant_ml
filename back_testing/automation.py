@@ -86,24 +86,37 @@ def algorithm_setup_da_rnn(args, market):
 ######## Algorithm Setup #######
 """
 
+def bt_datafeed_setup():
+    from back_testing.data_mining.strategy import PandasData
+    return PandasData
+
+
+"""
+######## Algorithm Setup #######
+"""
+
 def bt_strategy_setup():
     from back_testing.OTr_back_test import MyStrategy
     return MyStrategy
 
 
 class Automation:
-    def __init__(self, input_strategy_setup, input_strategy, market_setup, algorithm_setup, bt_strategy_setup):
+    def __init__(self, input_strategy_setup, input_strategy, market_setup, algorithm_setup, bt_strategy_setup, bt_datafeed_setup):
         self._args = model_launcher_parser.parse_args()
         self._input_strategy_origin = input_strategy
         self._input_strategy_post = input_strategy_setup(input_strategy)
         self._market_setup = market_setup
         self._algorithm_setup = algorithm_setup
+        self._bt_datafeed_setup = bt_datafeed_setup
+        self._bt_datafeed = bt_datafeed_setup()
         self._bt_strategy_setup = bt_strategy_setup
         self._bt_strategy = bt_strategy_setup()
+
 
     def fit(self, algorithm):
         algorithm.run()
         return algorithm.eval_and_plot()
+
 
     def process(self):
         input_strategies = self._input_strategy_post
@@ -128,10 +141,10 @@ class Automation:
             tf.reset_default_graph()
             # generate back testing summary report
         back_testing = BackTesting(MyStrategy=self._bt_strategy,
+                                   Datafeed=self._bt_datafeed,
                                    input_dict=df_output,
                                    domain_name=self._input_strategy_origin["name"],
-                                   save_input_dict=True,
-                                   target_col='y',
-                                   label='label')
+                                   save_input_dict=True
+                                   )
         back_testing.backtest()
 

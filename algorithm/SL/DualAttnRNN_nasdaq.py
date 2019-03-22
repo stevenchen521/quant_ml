@@ -104,11 +104,11 @@ class Algorithm(BaseSLTFModel):
 def main(args):
     mode = args.mode
     # mode = "test"
-    codes = ["SH_index_all"]
+    codes = ["SH_index"]
     market = args.market
     # train_steps = args.train_steps
     # train_steps = 5000
-    train_steps = 1000
+    train_steps = 10000
     # training_data_ratio = 0.98
     training_data_ratio = args.training_data_ratio
 

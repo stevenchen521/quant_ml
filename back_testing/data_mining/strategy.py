@@ -53,7 +53,7 @@ class PandasData(bt.feeds.PandasData):
 class MyStrategy(bt.Strategy):
     ## trade_para first is tp_xu, second is tp_windowing
     params = (
-        ('fromdate', datetime.datetime(2016, 8, 17)),
+        ('fromdate', datetime.datetime(2008, 1, 1)),
         ('todate', datetime.datetime(2019, 1, 23))
     )
 
@@ -119,7 +119,7 @@ class MyStrategy(bt.Strategy):
         self.log('Close, %.2f' % self.dataclose[0])
         # if self.order:
         #     return
-        if self.datetime.datetime(ago=0) > datetime.datetime(2016, 11, 18):
+        if self.datetime.datetime(ago=0) > datetime.datetime(2008, 1, 1):
             if not self.position: # not in the market
                 # Not yet ... we MIGHT BUY if ...
                 if (self.data.Tri[0] >= 0.8) and (self.data.Tri[-1] < 0.8):

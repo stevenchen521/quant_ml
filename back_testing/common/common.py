@@ -11,6 +11,23 @@ import sys
 import re
 
 
+def preprocess_for_backtest(df, add_col=None):
+    df.columns = df.columns.str.lower()
+    df['date'] = df.index
+    df['date'] = df['date'].apply(
+        lambda x: pd.to_datetime(x).strftime("%Y-%m-%d %H:%M:%S"))
+    df.dropna(how="any", inplace=True)
+    df.set_index(['date'], inplace=True)
+    df['openinterest'] = 0
+    if add_col:
+        col_order = ['open', 'high', 'low', 'close', 'volume', 'openinterest'] + add_col
+    else:
+        col_order = ['open', 'high', 'low', 'close', 'volume', 'openinterest']
+    df = df[col_order]
+    return df
+
+
+
 class BacktestSummary(object):
     def __init__(self, domain_name, name , results, input_df, commission, save_path, groupby_list=None):
         self.domain_name = domain_name
@@ -251,8 +268,8 @@ class BackTesting(object):
     Datafeed: backtrader datafeed class
     '''
 
-    def __init__(self, MyStrategy, Datafeed, input_dict, domain_name, summary_path =None,
-                 save_input_dict=False, commission=0.002, maxcpu=2, initialcash = 10000000):
+    def __init__(self, MyStrategy, Datafeed, input_dict, domain_name, summary_path=None,
+                 save_input_dict=False, commission=0.002, maxcpu=2, initialcash=10000000):
         self.MyStrategy = MyStrategy
         self.Datafeed = Datafeed
         self.input_dict = input_dict

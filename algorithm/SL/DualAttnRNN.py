@@ -108,7 +108,7 @@ class Algorithm(BaseSLTFModel):
 def main(args):
     mode = args.mode
     # mode = "test"
-    codes = ["SH_index_all"]
+    codes = ["SH_index"]
     # codes = ["600036", "601998"]
     # codes = args.codes
     # codes = ["AU88", "RB88", "CU88", "AL88"]

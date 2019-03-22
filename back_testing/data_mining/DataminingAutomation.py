@@ -94,6 +94,26 @@ class DataMiningAutomation(object):
 
         return strategy_dict
 
+
+    @staticmethod
+    def preprocess_for_backtest(df, add_col=None):
+        df['date'] = df.index
+        df['date'] = df['date'].apply(
+            lambda x: pd.to_datetime(x).strftime("%Y-%m-%d %H:%M:%S"))
+        df['openinterest'] = 0
+        basic_col = ['date', 'open', 'high', 'low', 'close', 'volume', 'openinterest']
+        if add_col:
+            col_order = basic_col + add_col
+        else:
+            col_order = basic_col
+        df = df[col_order]
+        df.columns = [x.lower() for x in list(df.columns) if x in basic_col] + add_col
+        df.dropna(how="any", inplace=True)
+        df.index = range(len(df))
+        # df.set_index(['date'], inplace=True
+        return df
+
+
     def format_data_dict(self):
         data_dict = {}
         for key, value in self._strategy_dict.items():
@@ -101,21 +121,21 @@ class DataMiningAutomation(object):
                 pre_process.ProcessStrategy(  # action_fetch, action_pre_analyze, action_analyze, action_post_analyze,
                     ['SH_index'], self._start_date, self._end_date, MinMaxScaler(), value).process()
             df_temp = post_frames['SH_index']
-            df_temp['openinterest'] = 0
-            df_temp.index = df_temp.index.set_names(['date'])
-            data_dict[key] = post_frames['SH_index']
+            df_temp = self.preprocess_for_backtest(df_temp, add_col=['Tri'])
+            data_dict[key] = df_temp
         return data_dict
 
 
     def process(self):
         df_dict = self.format_data_dict()
         back_testing = BackTesting(MyStrategy=self._bt_strategy,
-                                   Datafeed= self._bt_datafeed,
+                                   Datafeed=self._bt_datafeed,
                                    input_dict=df_dict,
                                    domain_name="SH_index",
                                    save_input_dict=True,
                                    summary_path='summary.xlsx')
         back_testing.backtest()
+
 
 if __name__ == '__main__':
     D = DataMiningAutomation(delta=2,
