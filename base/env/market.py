@@ -194,6 +194,7 @@ class Market(object):
                 scaled_frame = self.scaled_frames[code]
                 # Get instrument data x.
                 instruments_x = scaled_frame.iloc[date_index - self.seq_length: date_index]
+                instruments_x = instruments_x.drop(["close"], axis=1)    # added by steven, trend patch
                 # instruments_x = scaled_frame.iloc[date_index - self.seq_length: date_index+1]
                 data_x.append(np.array(instruments_x))
                 # Get instrument data y.
@@ -337,7 +338,8 @@ class Market(object):
 
     @property
     def data_dim(self):
-        data_dim = self.state_code_count * self.scaled_frames[self.codes[0]].shape[1]
+        data_dim = self.state_code_count * (self.scaled_frames[self.codes[0]].shape[1]-1) # replaced by steven, trend patch
+        # data_dim = self.state_code_count * self.scaled_frames[self.codes[0]].shape[1]
         if not self.use_sequence:
             if self.mix_trader_state:
                 data_dim += (2 + self.code_count)
