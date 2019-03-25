@@ -8,6 +8,24 @@ from backtrader.utils.py3 import items, iteritems
 from openpyxl import load_workbook
 import os
 import sys
+import re
+
+
+def preprocess_for_backtest(df, add_col=None):
+    df.columns = df.columns.str.lower()
+    df['date'] = df.index
+    df['date'] = df['date'].apply(
+        lambda x: pd.to_datetime(x).strftime("%Y-%m-%d %H:%M:%S"))
+    df.dropna(how="any", inplace=True)
+    df.set_index(['date'], inplace=True)
+    df['openinterest'] = 0
+    if add_col:
+        col_order = ['open', 'high', 'low', 'close', 'volume', 'openinterest'] + add_col
+    else:
+        col_order = ['open', 'high', 'low', 'close', 'volume', 'openinterest']
+    df = df[col_order]
+    return df
+
 
 
 class BacktestSummary(object):
@@ -53,6 +71,7 @@ class BacktestSummary(object):
 
     def summary(self, detail_df, if_list):
         value_list = []
+        key = detail_df['symbol'].iloc[0]
         Avg_trans_return = round(detail_df['trans_return'].mean(), 4)
         Avg_daily_return = round(detail_df['daily_return'].mean(), 4)
         Avg_annual_return = round(detail_df['annual_return'].mean(), 4)
@@ -78,11 +97,12 @@ class BacktestSummary(object):
         except Exception:
             sharpe_ratio = np.nan
         if if_list:
-            summary = [Avg_trans_return, Avg_daily_return, Avg_annual_return, Avg_period, total_period, cum_return,
+            summary = [key, Avg_trans_return, Avg_daily_return, Avg_annual_return, Avg_period, total_period, cum_return,
                        sharpe_ratio,
                        geo_avg_daily_return, geo_avg_annual_return, win_time, loss_time, total_time, win_percent]
         else:
-            summary = pd.DataFrame({'Avg_trans_return': Avg_trans_return,
+            summary = pd.DataFrame({'key': key,
+                                    'Avg_trans_return': Avg_trans_return,
                                     'Avg_daily_return': Avg_daily_return,
                                     'Avg_annual_return': Avg_annual_return,
                                     'Avg_period': Avg_period,
@@ -244,25 +264,32 @@ class BackTesting(object):
     input_dict: backtest_data, key is the name of each dataframe
     domain_name: configure strategy dict name
 
+    summary_path, default one is quant_ml//back_testing/summary_excel/().xlsx or manully input one
+    Datafeed: backtrader datafeed class
     '''
 
-    def __init__(self, MyStrategy, input_dict, domain_name, target_col, label, save_input_dict=False, commission=0.002, maxcpu=2,
-                 initialcash = 10000000):
+    def __init__(self, MyStrategy, Datafeed, input_dict, domain_name, summary_path=None,
+                 save_input_dict=False, commission=0.002, maxcpu=2, initialcash=10000000):
         self.MyStrategy = MyStrategy
+        self.Datafeed = Datafeed
         self.input_dict = input_dict
         self.domain_name = domain_name
         self.commission = commission
         self.maxcpu = maxcpu
-        self.target_col = target_col
-        self.label = label
+        # self.add_col = add_col
         self.initialcash = initialcash
         self.detail_df = pd.DataFrame()
         self.summary_df = pd.DataFrame()
-        self.time = datetime.now().strftime("%Y-%m-%d_%H:%M:%S %f")
-        self.summary_path = "../../back_testing/summary_excel/{}_summary_{}.xlsx".format(self.domain_name, self.time)
+        self.time = datetime.now().strftime("%Y-%m-%d_%H_%M")
+        self.project_dir = os.getcwd()
+        project_root = re.findall(r'.*quant_ml', self.project_dir)[0]
+        if summary_path:
+            self.summary_path = summary_path
+        else:
+            self.summary_path = project_root + "/back_testing/summary_excel/{}_summary_{}.xlsx".format(self.domain_name, self.time)
         self.save_input_dict = save_input_dict
         self.default_col = ['date', 'open', 'high', 'low', 'close', 'volume', 'openinterest']
-        self.backtest_col = self.default_col + [self.target_col, self.label]
+        self.backtest_col = self.default_col
 
     '''
     input_dict: default, false, if True, save input dict into summary excel
@@ -278,7 +305,10 @@ class BackTesting(object):
         self.summary_df.to_excel(writer, sheet_name='summary')
         if self.save_input_dict:
             for key, df in self.input_dict.items():
-                sheet_name = key
+                total_key = self.domain_name + '_' + key
+                df['key_name'] = total_key
+                annual_return = self.summary_df[self.summary_df['key'] == total_key]['geo_avg_annual_return'].iloc[0]
+                sheet_name = self.domain_name + str(round(annual_return, 4))
                 df.to_excel(writer, sheet_name=sheet_name)
         writer.save()
         writer.close()
@@ -286,46 +316,15 @@ class BackTesting(object):
 
 
     def backtest(self):
-        class PandasData(bt.feeds.PandasData):
-            lines = (self.target_col, self.label)
-            '''
-            The ``dataname`` parameter inherited from ``feed.DataBase`` is the pandas
-            DataFrame
-            '''
-            params = (
-                # Possible values for datetime (must always be present)
-                #  None : datetime is the "index" in the Pandas Dataframe
-                #  -1 : autodetect position or case-wise equal name
-                #  >= 0 : numeric index to the colum in the pandas dataframe
-                #  string : column name (as index) in the pandas dataframe
-                ('datetime', 'date'),
-
-                # Possible values below:
-                #  None : column not present
-                #  -1 : autodetect position or case-wise equal name
-                #  >= 0 : numeric index to the colum in the pandas dataframe
-                #  string : column name (as index) in the pandas dataframe
-                ('open', -1),
-                ('high', -1),
-                ('low', -1),
-                ('close', -1),
-                ('volume', -1),
-                ('openinterest', -1),
-                (self.target_col, self.target_col),
-                (self.label, self.label)
-            )
-
-
         for key in self.input_dict.keys():
-            cerebro = bt.Cerebro(maxcpus =self.maxcpu)
+            cerebro = bt.Cerebro(maxcpus=self.maxcpu)
             # Add a strategy
             cerebro.addstrategy(self.MyStrategy)
             # Fetch_raw_data(ticker_data_path)
             dataframe = self.input_dict[key]
             self.unique_col_name = [x for x in list(dataframe.columns) if x not in self.default_col]
-            dataframe = dataframe[self.backtest_col]
             dataframe['date'] = dataframe['date'].apply(lambda x: pd.to_datetime(x))
-            data = PandasData(dataname=dataframe)
+            data = self.Datafeed(dataname=dataframe)
             # Add the Data Feed to Cerebro
             dataname = self.domain_name + "_" + key
             cerebro.adddata(data, name=dataname)
@@ -355,6 +354,7 @@ class BackTesting(object):
                                                groupby_list=None)
             detail_df_temp = Backtest_summary.format_transaction()
             summary_df_temp = Backtest_summary.summary(detail_df_temp, if_list=False)
+
             self.detail_df = self.detail_df.append(detail_df_temp)
             self.summary_df = self.summary_df.append(summary_df_temp)
         self.save()

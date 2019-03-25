@@ -22,10 +22,38 @@ class GenericCSV_OTri(GenericCSVData):
     )
 
 
+class PandasData(bt.feeds.PandasData):
+    lines = ('Tri',)
+    '''
+    The ``dataname`` parameter inherited from ``feed.DataBase`` is the pandas
+    DataFrame
+    '''
+    params = (
+        # Possible values for datetime (must always be present)
+        #  None : datetime is the "index" in the Pandas Dataframe
+        #  -1 : autodetect position or case-wise equal name
+        #  >= 0 : numeric index to the colum in the pandas dataframe
+        #  string : column name (as index) in the pandas dataframe
+        ('datetime', 'date'),
+
+        # Possible values below:
+        #  None : column not present
+        #  -1 : autodetect position or case-wise equal name
+        #  >= 0 : numeric index to the colum in the pandas dataframe
+        #  string : column name (as index) in the pandas dataframe
+        ('open', -1),
+        ('high', -1),
+        ('low', -1),
+        ('close', -1),
+        ('volume', -1),
+        ('openinterest', -1),
+        ('Tri', 'Tri')
+    )
+
 class MyStrategy(bt.Strategy):
     ## trade_para first is tp_xu, second is tp_windowing
     params = (
-        ('fromdate', datetime.datetime(2016, 8, 17)),
+        ('fromdate', datetime.datetime(2008, 1, 1)),
         ('todate', datetime.datetime(2019, 1, 23))
     )
 
@@ -91,11 +119,10 @@ class MyStrategy(bt.Strategy):
         self.log('Close, %.2f' % self.dataclose[0])
         # if self.order:
         #     return
-        if self.datetime.datetime(ago=0) > datetime.datetime(2016, 11, 18):
+        if self.datetime.datetime(ago=0) > datetime.datetime(2008, 1, 1):
             if not self.position: # not in the market
                 # Not yet ... we MIGHT BUY if ...
-                # if (self.data.OTri[0] >= 0.8) and (self.data.OTri[-1] < 0.8):
-                if (self.data.OTri[0] >= 0.5) and (self.data.OTri[-1] < 0.5):
+                if (self.data.Tri[0] >= 0.8) and (self.data.Tri[-1] < 0.8):
                     # amount_to_invest = (self.p.order_pct * self.broker.cash)
                     # self.size = int(amount_to_invest / self.data.close)
                     self.order = self.buy(size=100)
@@ -106,8 +133,7 @@ class MyStrategy(bt.Strategy):
 
             if self.position:  # in the market
                 # Not yet ... we will sell if ...
-                # if (self.data.OTri[0] < 0.75) and (self.data.OTri[-1] >= 0.75):
-                if (self.data.OTri[0] < 0.5) and (self.data.OTri[-1] >= 0.5):
+                if (self.data.Tri[0] < 0.5) and (self.data.Tri[-1] >= 0.5):
                     # amount_to_invest = (self.p.order_pct * self.broker.cash)
                     # self.size = int(amount_to_invest / self.data.close)
                     self.order = self.sell(size=100)
@@ -135,12 +161,15 @@ class MyStrategy(bt.Strategy):
 
 
 def runstarts():
-    import sys
-    mypath = os.path.dirname(sys.modules['__main__'].__file__)
+    import os
+    import re
+    project_dir = os.getcwd()
+    mypath = re.findall(r'.*quant_ml', project_dir)[0]
     # file_name = "600276SH_for_backtest"
     file_name = 'DualAttnRNN_SH_index_all_for_backtest'
-    data_path = mypath + "/data/{}.csv".format(file_name)
-    summary_path = mypath + "/summary_excel/{}_summary.xlsx".format(file_name)
+
+    data_path = mypath + "/back_testing/data/{}.csv".format(file_name)
+    summary_path = mypath + "/back_testing/data_mining/summary_excel/{}_summary.xlsx".format(file_name)
     ticker_data_path = data_path
     commission = 0.002
     cerebro = Cerebro(maxcpus=2)

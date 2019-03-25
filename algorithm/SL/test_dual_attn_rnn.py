@@ -53,7 +53,7 @@ class TestDualAttnRnn(TestCase):
     def test_sh_index(self):
         mode = self.args.mode
         # mode = "test"
-        codes = ["SH_index_all"]
+        codes = ["SH_index"]
         market = self.args.market
         # train_steps = args.train_steps
         # train_steps = 5000
@@ -70,21 +70,19 @@ class TestDualAttnRnn(TestCase):
             "training_data_ratio": training_data_ratio,
         })
 
-
-
         model_name = os.path.basename(__file__).split('.')[0]
         print(os.path.join(CHECKPOINTS_DIR, "SL", model_name, market, "model"))
         print(os.path.join(CHECKPOINTS_DIR, "SL", model_name, market, "summary"))
 
         algorithm = Algorithm(tf.Session(config=config), env, env.seq_length, env.data_dim, env.code_count, **{
             "mode": mode,
-            "hidden_size": 12,
+            "hidden_size": 48,
             # "learning_rate": 0.001,
-            "layer_size": 2,
+            "layer_size": 1,
             # "keep_prob": 0.98,
-            "enable_saver": False,
+            "enable_saver": True,
             "train_steps": train_steps,
-            "enable_summary_writer": False,
+            "enable_summary_writer": True,
             "save_path": os.path.join(CHECKPOINTS_DIR, "SL", model_name, market, "model"),
             "summary_path": os.path.join(CHECKPOINTS_DIR, "SL", model_name, market, "summary"),
         })

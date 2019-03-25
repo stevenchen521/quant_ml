@@ -283,6 +283,25 @@ class BaseSLTFModel(BaseTFModel):
                                       y,
                                       label,
                                       self.save_path)
+        return self.format_model_output(x, label, y)
+
+
+    def format_model_output(self, x, label, y):
+        date_index = self.env.dates[self.env.e_data_indices[0] + self.env.seq_length + 1:]
+        frames_output = pd.DataFrame({'label': label.flatten(),
+                                     'y': y.flatten()}, index=date_index)
+        frames_test = self.env.origin_frames[self.env.codes[0]].loc[date_index]
+        frames_output = pd.concat([frames_test, frames_output], axis=1)
+        frames_output['date'] = frames_output.index
+        frames_output['date'] = frames_output['date'].apply(
+            lambda x: pd.to_datetime(x).strftime("%Y-%m-%d %H:%M:%S"))
+        # frames_output.dropna(how="any", inplace=True)
+        # frames_output.set_index(['Date'], inplace=True)
+        frames_output['openinterest'] = 0
+        col_order = ['date', 'open', 'high', 'low', 'close', 'volume', 'openinterest', 'label', 'y']
+        frames_output = frames_output[col_order]
+        return frames_output
+
 
     def eval_and_plot_backtest(self, code, model_name):
         x, label = self.env.get_test_data()
@@ -314,50 +333,8 @@ class BaseSLTFModel(BaseTFModel):
         dataframe_backtest.to_csv("../../back_testing/data/{}_{}_for_backtest.csv".format(model_name, code), date_format='%Y-%m-%d %H:%M:%S')
         print ('dataframe is updated')
 
-
-    # customize function
-    def eval_and_plot_pre_1Dre(self):
-        def _to_price(list, mean, std, first_close):
-            func = np.vectorize(lambda x: (x * std + mean)/100 + 1)
-            ### return to daily change
-            daily_change_list = func(list)
-
-            ### return to price
-            label1 = [reduce(lambda x, y: x * y, daily_change_list[:i + 1]).tolist() for i in range(len(daily_change_list))]
-            price_list = np.array([[i[0] * first_close] for i in label1])
-            return price_list, daily_change_list
-
-        x, label = self.env.get_test_data()
-        # price = self.env.original_frame
-        # add new_code, scale the label and predict back
-        first_index = self.env.e_data_indices[0]-1
-        first_close = self.env.origin_frames['600036']['close'].iloc[first_index]
-
-        mean = self.env.scaler[0].mean_[-1]
-        std = math.sqrt(self.env.scaler[0].var_[-1])
-        label_price, label_daily_change = _to_price(label, mean, std, first_close)
-
-        y = self.predict(x)
-        y_price, y_daily_change = _to_price(y, mean, std, first_close)
-        with open(self.save_path + '_label_price.json', mode='w') as fp:
-            json.dump(label_price.tolist(), fp, indent=True)
-
-        with open(self.save_path + '_label_daily_change.json', mode='w') as fp:
-            json.dump(label_daily_change.tolist(), fp, indent=True)
-
-        with open(self.save_path + '_y_price.json', mode='w') as fp:
-            json.dump(y_price.tolist(), fp, indent=True)
-
-        with open(self.save_path + '_y_daily_change.json', mode='w') as fp:
-            json.dump(y_daily_change.tolist(), fp, indent=True)
-        data_ploter.plot_stock_series(self.env.codes,
-                                      y_price,
-                                      label_price,
-                                      self.save_path + '_price')
-        data_ploter.plot_stock_series(self.env.codes,
-                                      y_daily_change,
-                                      label_daily_change,
-                                      self.save_path + '_daily_change')
+    def close_sesstion(self):
+        self.session.close()
 
 
 

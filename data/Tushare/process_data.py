@@ -12,14 +12,14 @@ class ProcessRawData(object):
     '''
     @staticmethod
     def process_data_from_tushare(df, save_code=False, col_need=False, rename=False, need_return=False):
+        if rename:
+            df.rename(columns=rename, inplace=True)
+        else:
+            pass
         df['date'] = df['date'].apply(lambda x: pd.to_datetime(x).strftime("%Y-%m-%d"))
         df.sort_values(by=['date'], ascending=True, inplace=True)
         if col_need:
             df = df[col_need]
-        else:
-            pass
-        if rename:
-            df.rename(columns=rename, inplace=True)
         else:
             pass
         df.index = df['date']
@@ -36,9 +36,6 @@ class ProcessRawData(object):
 
 
 
-    @staticmethod
-    def process_data_from_BBG(df1, df2, save_code, add_col):
-        eps = df2[add_col]
 
 
 

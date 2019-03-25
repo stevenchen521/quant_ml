@@ -22,7 +22,6 @@ class Algorithm(BaseSLTFModel):
             self.hidden_size = options['hidden_size']
         except KeyError:
             self.hidden_size = 1
-
         self._init_input()
         self._init_nn()
         self._init_op()
@@ -65,7 +64,6 @@ class Algorithm(BaseSLTFModel):
 
 
 def main(args):
-
     # mode = args.mode
     mode = 'test'
     codes = ["600036"]
