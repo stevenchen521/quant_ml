@@ -66,13 +66,20 @@ third one: future bar length, focus on return in future length
 strategy_SH_index = {
     'name': 'strategy_SH_index',
     'module': 'base.env.pre_process',
-    'source': "{}/../../data/SH_index_all.csv".format(get_folder(__file__)),
+    'source': "{}/../../data/SH_index.csv".format(get_folder(__file__)),
     'fetch': 'FetchCSVSingle',
     'pre_analyze': 'PreAnalyzeDefault',
-    'analyze': ['stoch|high_low_close|14_5',    # key indicator
-                'trend|close|5_5_20'],
+    'analyze': [
+                'ma|close|5_0',
+                # 'ma|close|5_1',
+                # 'ma|close|5_2',
+                'rsi|close|7',
+                # 'macd|close|12_26_9',
+                'minus_dm|high_low|14', 'plus_dm|high_low|14', 'adx|high_low_close|14', # Directional Movement Index(DMI)
+                'stoch|high_low_close|14_3',
+                'trend|close|5_5_3'],
     'post_analyze': 'PostAnalyzeNASDAQ',
-    'label': 'trend|close|5_5_20'
+    'label': 'trend|close|5_5_3'
     # 'post_analyze': 'PostAnalyzeDefault',
 }
 

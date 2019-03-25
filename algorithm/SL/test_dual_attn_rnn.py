@@ -57,7 +57,7 @@ class TestDualAttnRnn(TestCase):
         market = self.args.market
         # train_steps = args.train_steps
         # train_steps = 5000
-        train_steps = 3000
+        train_steps = 30000
         # training_data_ratio = 0.98
         training_data_ratio = self.args.training_data_ratio
 
@@ -76,9 +76,9 @@ class TestDualAttnRnn(TestCase):
 
         algorithm = Algorithm(tf.Session(config=config), env, env.seq_length, env.data_dim, env.code_count, **{
             "mode": mode,
-            "hidden_size": 12,
+            "hidden_size": 48,
             # "learning_rate": 0.001,
-            "layer_size": 2,
+            "layer_size": 1,
             # "keep_prob": 0.98,
             "enable_saver": True,
             "train_steps": train_steps,
