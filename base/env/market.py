@@ -13,7 +13,7 @@ from enum import Enum
 
 import base.env.pre_process as pre_process
 from base.env.pre_process_conf import active_stragery
-from helper.util import get_attribute
+# from helper.util import get_attribute
 
 
 class Market(object):
