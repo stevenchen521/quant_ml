@@ -11,6 +11,23 @@ import sys
 import re
 
 
+def preprocess_for_backtest(df, add_col=None):
+    df.columns = df.columns.str.lower()
+    df['date'] = df.index
+    df['date'] = df['date'].apply(
+        lambda x: pd.to_datetime(x).strftime("%Y-%m-%d %H:%M:%S"))
+    df.dropna(how="any", inplace=True)
+    df.set_index(['date'], inplace=True)
+    df['openinterest'] = 0
+    if add_col:
+        col_order = ['open', 'high', 'low', 'close', 'volume', 'openinterest'] + add_col
+    else:
+        col_order = ['open', 'high', 'low', 'close', 'volume', 'openinterest']
+    df = df[col_order]
+    return df
+
+
+
 class BacktestSummary(object):
     def __init__(self, domain_name, name , results, input_df, commission, save_path, groupby_list=None):
         self.domain_name = domain_name
@@ -247,27 +264,32 @@ class BackTesting(object):
     input_dict: backtest_data, key is the name of each dataframe
     domain_name: configure strategy dict name
 
+    summary_path, default one is quant_ml//back_testing/summary_excel/().xlsx or manully input one
+    Datafeed: backtrader datafeed class
     '''
 
-    def __init__(self, MyStrategy, input_dict, domain_name, target_col, label, save_input_dict=False, commission=0.002, maxcpu=2,
-                 initialcash = 10000000):
+    def __init__(self, MyStrategy, Datafeed, input_dict, domain_name, summary_path=None,
+                 save_input_dict=False, commission=0.002, maxcpu=2, initialcash=10000000):
         self.MyStrategy = MyStrategy
+        self.Datafeed = Datafeed
         self.input_dict = input_dict
         self.domain_name = domain_name
         self.commission = commission
         self.maxcpu = maxcpu
-        self.target_col = target_col
-        self.label = label
+        # self.add_col = add_col
         self.initialcash = initialcash
         self.detail_df = pd.DataFrame()
         self.summary_df = pd.DataFrame()
         self.time = datetime.now().strftime("%Y-%m-%d_%H_%M")
         self.project_dir = os.getcwd()
         project_root = re.findall(r'.*quant_ml', self.project_dir)[0]
-        self.summary_path = project_root + "/back_testing/summary_excel/{}_summary_{}.xlsx".format(self.domain_name, self.time)
+        if summary_path:
+            self.summary_path = summary_path
+        else:
+            self.summary_path = project_root + "/back_testing/summary_excel/{}_summary_{}.xlsx".format(self.domain_name, self.time)
         self.save_input_dict = save_input_dict
         self.default_col = ['date', 'open', 'high', 'low', 'close', 'volume', 'openinterest']
-        self.backtest_col = self.default_col + [self.target_col, self.label]
+        self.backtest_col = self.default_col
 
     '''
     input_dict: default, false, if True, save input dict into summary excel
@@ -294,46 +316,15 @@ class BackTesting(object):
 
 
     def backtest(self):
-        class PandasData(bt.feeds.PandasData):
-            lines = (self.target_col, self.label)
-            '''
-            The ``dataname`` parameter inherited from ``feed.DataBase`` is the pandas
-            DataFrame
-            '''
-            params = (
-                # Possible values for datetime (must always be present)
-                #  None : datetime is the "index" in the Pandas Dataframe
-                #  -1 : autodetect position or case-wise equal name
-                #  >= 0 : numeric index to the colum in the pandas dataframe
-                #  string : column name (as index) in the pandas dataframe
-                ('datetime', 'date'),
-
-                # Possible values below:
-                #  None : column not present
-                #  -1 : autodetect position or case-wise equal name
-                #  >= 0 : numeric index to the colum in the pandas dataframe
-                #  string : column name (as index) in the pandas dataframe
-                ('open', -1),
-                ('high', -1),
-                ('low', -1),
-                ('close', -1),
-                ('volume', -1),
-                ('openinterest', -1),
-                (self.target_col, self.target_col),
-                (self.label, self.label)
-            )
-
-
         for key in self.input_dict.keys():
-            cerebro = bt.Cerebro(maxcpus =self.maxcpu)
+            cerebro = bt.Cerebro(maxcpus=self.maxcpu)
             # Add a strategy
             cerebro.addstrategy(self.MyStrategy)
             # Fetch_raw_data(ticker_data_path)
             dataframe = self.input_dict[key]
             self.unique_col_name = [x for x in list(dataframe.columns) if x not in self.default_col]
-            dataframe = dataframe[self.backtest_col]
             dataframe['date'] = dataframe['date'].apply(lambda x: pd.to_datetime(x))
-            data = PandasData(dataname=dataframe)
+            data = self.Datafeed(dataname=dataframe)
             # Add the Data Feed to Cerebro
             dataname = self.domain_name + "_" + key
             cerebro.adddata(data, name=dataname)

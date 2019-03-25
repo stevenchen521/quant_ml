@@ -7,17 +7,21 @@ import pandas as pd
 
 
 def bt_strategy_setup():
-    from back_testing.OTr_back_test import MyStrategy
+    from back_testing.data_mining.strategy import MyStrategy
     return MyStrategy
+
+def bt_datafeed_setup():
+    from back_testing.data_mining.strategy import PandasData
+    return PandasData
 
 
 class DataMiningAutomation(object):
-    def __init__(self, delta, step, strategy, start_date, end_date, bt_strategy_setup):
+    def __init__(self, delta, step, strategy, start_date, end_date, bt_strategy_setup, bt_datafeed_setup):
         self._strategy_dict = self.manipulate_strategy(strategy, delta, step)
         self._start_date = start_date
         self._end_date = end_date
-        self._bt_strategy_setup = bt_strategy_setup
         self._bt_strategy = bt_strategy_setup()
+        self._bt_datafeed = bt_datafeed_setup()
 
     def manipulate_strategy(self, strategy, delta, step):
 
@@ -90,25 +94,48 @@ class DataMiningAutomation(object):
 
         return strategy_dict
 
+
+    @staticmethod
+    def preprocess_for_backtest(df, add_col=None):
+        df['date'] = df.index
+        df['date'] = df['date'].apply(
+            lambda x: pd.to_datetime(x).strftime("%Y-%m-%d %H:%M:%S"))
+        df['openinterest'] = 0
+        basic_col = ['date', 'open', 'high', 'low', 'close', 'volume', 'openinterest']
+        if add_col:
+            col_order = basic_col + add_col
+        else:
+            col_order = basic_col
+        df = df[col_order]
+        df.columns = [x.lower() for x in list(df.columns) if x in basic_col] + add_col
+        df.dropna(how="any", inplace=True)
+        df.index = range(len(df))
+        # df.set_index(['date'], inplace=True
+        return df
+
+
     def format_data_dict(self):
         data_dict = {}
         for key, value in self._strategy_dict.items():
-            dates, pre_frames, origin_frames, post_frames = \
+            dates, _, _, post_frames = \
                 pre_process.ProcessStrategy(  # action_fetch, action_pre_analyze, action_analyze, action_post_analyze,
                     ['SH_index'], self._start_date, self._end_date, MinMaxScaler(), value).process()
-            data_dict[key] = post_frames
+            df_temp = post_frames['SH_index']
+            df_temp = self.preprocess_for_backtest(df_temp, add_col=['Tri'])
+            data_dict[key] = df_temp
         return data_dict
 
 
     def process(self):
         df_dict = self.format_data_dict()
         back_testing = BackTesting(MyStrategy=self._bt_strategy,
+                                   Datafeed=self._bt_datafeed,
                                    input_dict=df_dict,
                                    domain_name="SH_index",
                                    save_input_dict=True,
-                                   target_col='y',
-                                   label='label')
+                                   summary_path='summary.xlsx')
         back_testing.backtest()
+
 
 if __name__ == '__main__':
     D = DataMiningAutomation(delta=2,
@@ -116,7 +143,8 @@ if __name__ == '__main__':
                              strategy=strategy_data_mining,
                              start_date="2008-01-01",
                              end_date="2019-02-01",
-                             bt_strategy_setup= bt_strategy_setup)
+                             bt_strategy_setup= bt_strategy_setup,
+                             bt_datafeed_setup=bt_datafeed_setup)
     D.process()
 
 
