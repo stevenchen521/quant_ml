@@ -133,7 +133,7 @@ class PostAnalyzeNASDAQ(PostAnalyze):
         # for state_code in self._state_codes:
         #     self._analyze_frames[state_code].to_csv("../../back_testing/data/{}.csv".format(state_code))
         post_frame = analyze_frames[self._state_code].copy()
-        post_frame = post_frame.drop(['high', 'low', 'open'], axis=1)
+        # post_frame = post_frame.drop(['high', 'low', 'open'], axis=1)
         if self._label != 'close':
             post_frame = post_frame.drop(['close'], axis=1)
             post_frame = post_frame.rename(index=str, columns={"close":"close1", self._label: "close"})
@@ -310,11 +310,13 @@ class IndicatorAnalysis:
         def calculate_up_trend(current_val, target_future_bars):
             if max(target_future_bars) == min(target_future_bars):
                 breakpoint()
-            return (1-((current_val - min(target_future_bars)) / (max(target_future_bars) - min(target_future_bars)))) * 0.5 + 0.5
+            # return (1-((current_val - min(target_future_bars)) / (max(target_future_bars) - min(target_future_bars)))) * 0.5 + 0.5
+            return ((current_val - min(target_future_bars)) / (max(target_future_bars) - min(target_future_bars))) * 0.5 + 0.5
 
         def calculate_down_trend(current_val, target_future_bars):
-            return (1-((current_val - min(target_future_bars)) / (max(target_future_bars) - min(target_future_bars)))) * 0.5
-        
+            # return (1-((current_val - min(target_future_bars)) / (max(target_future_bars) - min(target_future_bars)))) * 0.5
+            return ((current_val - min(target_future_bars)) / (max(target_future_bars) - min(target_future_bars))) * 0.5
+
         # we calculate the trend
         target = args[0]
         result = target.copy()
@@ -356,6 +358,108 @@ class IndicatorAnalysis:
         # self._label = 'trend_{}'.format("_".join([str(v) for v in args[1:4]]))
         return pd.DataFrame(data=result, index=self._index.flatten(), columns=[self._label])
 
+    def trend_backward(self, *args):
+        """  If closing price value leads its MA 15 and MA 15 is rising for last 5 days then trend is Uptrend
+        i.e. trend signal is 1.
+
+        If closing price value lags its MA 15 and MA 15 is falling for last 5 days then trend is Downtrend
+        i.e. trend signal is 0.
+
+        For up trend:
+        Tr_i = [(cp_i - min cp)/(max cp - min cp)] * 0.5 + 0.5
+
+        For down trend:
+        Tr_i = [(cp_i - min cp)/(max cp - min cp)] * 0.5
+
+        min cp = min(cp_i, cp_i-1, cp_i-2)
+        max cp = max(cp_i, cp_i-1, cp_i-2)
+
+        """
+
+        TREND_DOWN = -1
+        TREND_NO = 0
+        TREND_UP = 1
+
+        def determine_trend_ma(targets, trend_bars_idx, current_val):
+            # determine the trend based on the move average.
+            # e.x. if the target falling in last 5(trend_bars_idx) days and current value lower than mv, trend is down
+            latest_trend = None
+            for idx in range(trend_bars_idx):
+
+                # if trend_bars_idx - idx - 2 == 0:break
+
+                # if the current target is larger than the previous one
+                if targets[trend_bars_idx - idx] >= targets[trend_bars_idx - idx - 1]:
+                    trend = TREND_UP
+                    if latest_trend == TREND_DOWN:
+                        return TREND_NO
+                    latest_trend = trend
+                if targets[trend_bars_idx - idx] < targets[trend_bars_idx - idx - 1]:
+                    trend = TREND_DOWN
+                    if latest_trend == TREND_UP:
+                        return TREND_NO
+                    latest_trend = trend
+
+            if trend == TREND_UP and current_val < targets[trend_bars_idx]:
+                return TREND_NO
+            elif trend == TREND_DOWN and current_val > targets[trend_bars_idx]:
+                return TREND_NO
+
+            return trend
+
+        def calculate_up_trend(current_val, target_past_bars):
+            # if max(target_past_bars) == min(target_past_bars):
+            #     breakpoint()
+            return (1 - ((current_val - min(target_past_bars)) / (max(target_past_bars) - min(target_past_bars)))) * 0.5 + 0.5
+            # return ((current_val - min(target_past_bars)) / (max(target_past_bars) - min(target_past_bars))) * 0.5 + 0.5
+
+        def calculate_down_trend(current_val, target_past_bars):
+            return (1 - ((current_val - min(target_past_bars)) / (max(target_past_bars) - min(target_past_bars)))) * 0.5
+            # return ((current_val - min(target_past_bars)) / (max(target_past_bars) - min(target_past_bars))) * 0.5
+
+        # we calculate the trend
+        target = args[0]
+        result = target.copy()
+
+        ma_bars = int(args[1])
+        trend_bars = int(args[2])
+        past_bars = int(args[3])
+
+        # get moving average
+        ma = talib.MA(target, timeperiod=ma_bars)
+
+        last_trend = None
+        for curr_idx, val in enumerate(target):
+            result[curr_idx] = None
+            if curr_idx >= ma_bars + trend_bars-1 and curr_idx >= past_bars:
+                target_trend_bars = ma[curr_idx-trend_bars: curr_idx+1]
+
+                # determine the trend based on the move average.
+                # e.x. if falling in last 5 days, trend is down
+                ma_trend = determine_trend_ma(target_trend_bars, trend_bars, val)
+
+                # if trend is down and price is lower than the ma we calculate trend with down formula
+                if ma_trend == TREND_DOWN:
+                    last_trend = TREND_DOWN
+                    result[curr_idx] = calculate_down_trend(val, target[curr_idx-past_bars+1: curr_idx+1])
+
+                # if trend is up and price is higher than the ma we calculate trend with up formula
+                elif ma_trend == TREND_UP:
+                    last_trend = TREND_UP
+                    result[curr_idx] = calculate_up_trend(val, target[curr_idx-past_bars+1: curr_idx+1])
+                elif ma_trend == TREND_NO:
+                    # if have no trend, we get the last trend and calculate the trend
+                    if last_trend == TREND_DOWN:
+                        result[curr_idx] = calculate_down_trend(val, target[curr_idx-past_bars+1: curr_idx+1])
+                    elif last_trend == TREND_UP:
+                        result[curr_idx] = calculate_up_trend(val, target[curr_idx-past_bars+1: curr_idx+1])
+
+        # return pd.DataFrame(result).rename(columns={'close': 'trend_{}'.format(args[1:4])})
+        # self._label = 'trend_{}'.format("_".join([str(v) for v in args[1:4]]))
+        # return pd.DataFrame(data=result, index=self._index.flatten(), columns=[self._label])
+        args_str = "_".join([str(v) for v in args[1:4]])
+        return pd.DataFrame(data=result, index=self._index.flatten(), columns=["trend_backward_{}".format(args_str)])
+
     @catch_exception(LOGGER)
     def analyze(self):
         df_indicators = pd.DataFrame()
@@ -376,8 +480,10 @@ class IndicatorAnalysis:
             # input_col = [val for val in paras if val.startswith(input_selector)]
             # remove the columns, only arguments remained
             # args = list((arg for arg in paras if not any(col == arg for col in input_col)))
-            args = meta_info[2].split('_')
-            args = list(map(int, args))  # convert from string to int
+            args = []
+            if len(meta_info) == 3:
+                args = meta_info[2].split('_')
+                args = list(map(int, args))  # convert from string to int
 
             # input_col_final = [col.replace(input_selector, '') for col in input_col]
             input = self._origin_frame[input_col].transpose().values
@@ -388,6 +494,7 @@ class IndicatorAnalysis:
 
 
                 result = method(*input, *args)
+
                 if df_indicators.empty:
                     df_indicators = result if result is not None else df_indicators
                 else:

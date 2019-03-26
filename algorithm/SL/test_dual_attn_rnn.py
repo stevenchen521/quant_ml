@@ -29,6 +29,7 @@ class TestDualAttnRnn(TestCase):
         env = Market(codes, start_date="2008-01-02", end_date="2019-02-01", **{
             "market": market,
             "use_sequence": True,
+            "seq_length": 5,
             "scaler": MinMaxScaler(feature_range=(0, 1)),
             "mix_index_state": True,
             "training_data_ratio": training_data_ratio,
@@ -38,8 +39,9 @@ class TestDualAttnRnn(TestCase):
 
         algorithm = Algorithm(tf.Session(config=config), env, env.seq_length, env.data_dim, env.code_count, **{
             "mode": mode,
-            "hidden_size": 48,
-            "learning_rate": 0.0001,
+            "hidden_size": 256,
+            "layer_size": 128,
+            # "learning_rate": 0.001,
             "enable_saver": True,
             "train_steps": train_steps,
             "enable_summary_writer": True,
@@ -64,7 +66,7 @@ class TestDualAttnRnn(TestCase):
         env = Market(codes, start_date="2006-10-09", end_date="2019-02-27", **{
             "market": market,
             "use_sequence": True,
-            "seq_length": 10,
+            "seq_length": 5,
             "scaler": MinMaxScaler(feature_range=(0, 1)),
             "mix_index_state": True,
             "training_data_ratio": training_data_ratio,
@@ -76,9 +78,9 @@ class TestDualAttnRnn(TestCase):
 
         algorithm = Algorithm(tf.Session(config=config), env, env.seq_length, env.data_dim, env.code_count, **{
             "mode": mode,
-            "hidden_size": 48,
+            "hidden_size": 256,
             # "learning_rate": 0.001,
-            "layer_size": 1,
+            "layer_size": 128,
             # "keep_prob": 0.98,
             "enable_saver": True,
             "train_steps": train_steps,

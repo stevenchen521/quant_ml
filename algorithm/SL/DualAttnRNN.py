@@ -70,6 +70,7 @@ class Algorithm(BaseSLTFModel):
 
             # should we use the the decay???
             self.optimizer = tf.train.RMSPropOptimizer(self.learning_rate)
+            # self.optimizer = tf.train.AdadeltaOptimizer(self.learning_rate)
             self.train_op = self.optimizer.minimize(self.loss)
         self.session.run(tf.global_variables_initializer())
 

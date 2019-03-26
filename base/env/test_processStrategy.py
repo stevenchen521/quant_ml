@@ -23,7 +23,7 @@ class TestProcessStrategy(TestCase):
         self.test_get_active_strategy()
         dates, pre_frames, origin_frames, post_frames = pre_process.ProcessStrategy(
                                                         # self.action_fetch, self.action_pre_analyze,self.indicators, self.action_post_analyze,
-                                               ['SH_index_all'], "2008-01-01", "2019-02-01", MinMaxScaler(), active_stragery).process()
+                                               ['SH_index'], "2008-01-01", "2019-02-01", MinMaxScaler(), active_stragery).process()
         result = post_frames['nasdaq'].dropna()
 
         self.assertIsInstance(result, pd.DataFrame)

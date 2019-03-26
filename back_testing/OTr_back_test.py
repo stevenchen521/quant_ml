@@ -94,8 +94,8 @@ class MyStrategy(bt.Strategy):
         if self.datetime.datetime(ago=0) > datetime.datetime(2016, 11, 18):
             if not self.position: # not in the market
                 # Not yet ... we MIGHT BUY if ...
-                # if (self.data.OTri[0] >= 0.8) and (self.data.OTri[-1] < 0.8):
-                if (self.data.OTri[0] >= 0.5) and (self.data.OTri[-1] < 0.5):
+                if (self.data.OTri[0] >= 0.79) and (self.data.OTri[-1] < 0.79):
+                # if (self.data.OTri[0] < 0.45) and (self.data.OTri[-1] >= 0.45):
                     # amount_to_invest = (self.p.order_pct * self.broker.cash)
                     # self.size = int(amount_to_invest / self.data.close)
                     self.order = self.buy(size=100)
@@ -106,8 +106,8 @@ class MyStrategy(bt.Strategy):
 
             if self.position:  # in the market
                 # Not yet ... we will sell if ...
-                # if (self.data.OTri[0] < 0.75) and (self.data.OTri[-1] >= 0.75):
-                if (self.data.OTri[0] < 0.5) and (self.data.OTri[-1] >= 0.5):
+                if (self.data.OTri[0] < 0.6) and (self.data.OTri[-1] >= 0.6):
+                # if (self.data.OTri[0] > 0.74) and (self.data.OTri[-1] <= 0.74):
                     # amount_to_invest = (self.p.order_pct * self.broker.cash)
                     # self.size = int(amount_to_invest / self.data.close)
                     self.order = self.sell(size=100)
@@ -138,7 +138,7 @@ def runstarts():
     import sys
     mypath = os.path.dirname(sys.modules['__main__'].__file__)
     # file_name = "600276SH_for_backtest"
-    file_name = 'DualAttnRNN_SH_index_all_for_backtest'
+    file_name = 'test_dual_attn_rnn_SH_index_for_backtest'
     data_path = mypath + "/data/{}.csv".format(file_name)
     summary_path = mypath + "/summary_excel/{}_summary.xlsx".format(file_name)
     ticker_data_path = data_path
