@@ -77,12 +77,24 @@ strategy_SH_index = {
                 # 'macd|close|12_26_9',
                 'minus_dm|high_low|14', 'plus_dm|high_low|14', 'adx|high_low_close|14', # Directional Movement Index(DMI)
                 'stoch|high_low_close|14_3',
-                'trend|close|5_5_3'],
+                'trend|close|5_5_20'],
     'post_analyze': 'PostAnalyzeNASDAQ',
-    'label': 'trend|close|5_5_3'
+    'label': 'trend|close|5_5_20'
     # 'post_analyze': 'PostAnalyzeDefault',
 }
 
+
+strategy_SH_index_naive_LSTM = {
+    'name': 'strategy_SH_index',
+    'module': 'base.env.pre_process',
+    'source': "{}/../../data/SH_index.csv".format(get_folder(__file__)),
+    'fetch': 'FetchCSVSingle',
+    'pre_analyze': 'PreAnalyzeDefault',
+    'analyze': ['stoch|high_low_close|14_3',
+                'roc|close|5'],
+    'post_analyze': 'PostAnalyzeNASDAQ',
+    'label': 'roc|close|5'
+}
 #
 # strategy_SH_index = {
 #     'module': 'base.env.pre_process',
@@ -94,6 +106,6 @@ strategy_SH_index = {
 # }
 
 
-active_stragery = strategy_SH_index
+active_stragery = strategy_SH_index_naive_LSTM
 # active_stragery = 'base.env.pre_process_conf.strategy_SH_index'
 

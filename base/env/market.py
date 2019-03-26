@@ -194,7 +194,10 @@ class Market(object):
                 scaled_frame = self.scaled_frames[code]
                 # Get instrument data x.
                 instruments_x = scaled_frame.iloc[date_index - self.seq_length: date_index]
-                instruments_x = instruments_x.drop(["close"], axis=1)    # added by steven, trend patch
+                try:
+                    instruments_x = instruments_x.drop(["close"], axis=1) # added by steven, trend patch
+                except Exception:
+                    pass
                 # instruments_x = scaled_frame.iloc[date_index - self.seq_length: date_index+1]
                 data_x.append(np.array(instruments_x))
                 # Get instrument data y.

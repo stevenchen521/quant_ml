@@ -15,7 +15,7 @@ import os
 class GenericCSV_OTri(GenericCSVData):
     lines = ('OTri', 'Tri')
     params = (
-        ('fromdate', datetime.datetime(2016, 8, 17)),
+        ('fromdate', datetime.datetime(2015, 12, 17)),
         ('todate', datetime.datetime(2019, 1, 23)),
         ('OTri', 7),
         ('Tri', 8)
@@ -25,7 +25,7 @@ class GenericCSV_OTri(GenericCSVData):
 class MyStrategy(bt.Strategy):
     ## trade_para first is tp_xu, second is tp_windowing
     params = (
-        ('fromdate', datetime.datetime(2016, 8, 17)),
+        ('fromdate', datetime.datetime(2015, 7, 28)),
         ('todate', datetime.datetime(2019, 1, 23))
     )
 
@@ -91,11 +91,11 @@ class MyStrategy(bt.Strategy):
         self.log('Close, %.2f' % self.dataclose[0])
         # if self.order:
         #     return
-        if self.datetime.datetime(ago=0) > datetime.datetime(2016, 11, 18):
+        if self.datetime.datetime(ago=0) > datetime.datetime(2015, 7, 28):
             if not self.position: # not in the market
                 # Not yet ... we MIGHT BUY if ...
                 # if (self.data.OTri[0] >= 0.8) and (self.data.OTri[-1] < 0.8):
-                if (self.data.OTri[0] >= 0.5) and (self.data.OTri[-1] < 0.5):
+                if (self.data.OTri[0] >= 0.8) and (self.data.OTri[-1] < 0.8):
                     # amount_to_invest = (self.p.order_pct * self.broker.cash)
                     # self.size = int(amount_to_invest / self.data.close)
                     self.order = self.buy(size=100)
@@ -138,7 +138,7 @@ def runstarts():
     import sys
     mypath = os.path.dirname(sys.modules['__main__'].__file__)
     # file_name = "600276SH_for_backtest"
-    file_name = 'DualAttnRNN_SH_index_all_for_backtest'
+    file_name = 'DualAttnRNN_SH_index_for_backtest'
     data_path = mypath + "/data/{}.csv".format(file_name)
     summary_path = mypath + "/summary_excel/{}_summary.xlsx".format(file_name)
     ticker_data_path = data_path

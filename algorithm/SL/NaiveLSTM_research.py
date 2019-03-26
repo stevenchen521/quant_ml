@@ -84,7 +84,7 @@ def main(args):
 
     mode = args.mode
     # mode = 'test'
-    codes = ["nasdaq"]
+    codes = ["SH_index"]
     # codes = ["600036", "601998"]
     # codes = args.codes
     # codes = ["AU88", "RB88", "CU88", "AL88"]
@@ -95,7 +95,7 @@ def main(args):
     # training_data_ratio = 0.98
     training_data_ratio = args.training_data_ratio
 
-    env = Market(codes, start_date="2008-01-02", end_date="2019-02-28", **{
+    env = Market(codes, start_date="2008-01-02", end_date="2019-03-18", **{
         "market": market,
         "use_sequence": True,
         "seq_length": 20,
@@ -110,6 +110,7 @@ def main(args):
         "mode": mode,
         "hidden_size": 32,
         "enable_saver": True,
+        "keep_prob": 0.95,
         "train_steps": train_steps,
         "enable_summary_writer": True,
         "save_path": os.path.join(CHECKPOINTS_DIR, "SL", model_name, market, "model"),

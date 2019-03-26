@@ -78,7 +78,7 @@ class TestDualAttnRnn(TestCase):
             "mode": mode,
             "hidden_size": 48,
             # "learning_rate": 0.001,
-            "layer_size": 1,
+            "layer_size": 2,
             # "keep_prob": 0.98,
             "enable_saver": True,
             "train_steps": train_steps,
