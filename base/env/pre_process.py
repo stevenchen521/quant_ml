@@ -310,12 +310,12 @@ class IndicatorAnalysis:
         def calculate_up_trend(current_val, target_future_bars):
             if max(target_future_bars) == min(target_future_bars):
                 breakpoint()
-            # return (1-((current_val - min(target_future_bars)) / (max(target_future_bars) - min(target_future_bars)))) * 0.5 + 0.5
-            return ((current_val - min(target_future_bars)) / (max(target_future_bars) - min(target_future_bars))) * 0.5 + 0.5
+            return (1-((current_val - min(target_future_bars)) / (max(target_future_bars) - min(target_future_bars)))) * 0.5 + 0.5
+            # return ((current_val - min(target_future_bars)) / (max(target_future_bars) - min(target_future_bars))) * 0.5 + 0.5
 
         def calculate_down_trend(current_val, target_future_bars):
-            # return (1-((current_val - min(target_future_bars)) / (max(target_future_bars) - min(target_future_bars)))) * 0.5
-            return ((current_val - min(target_future_bars)) / (max(target_future_bars) - min(target_future_bars))) * 0.5
+            return (1-((current_val - min(target_future_bars)) / (max(target_future_bars) - min(target_future_bars)))) * 0.5
+            # return ((current_val - min(target_future_bars)) / (max(target_future_bars) - min(target_future_bars))) * 0.5
 
         # we calculate the trend
         target = args[0]
@@ -410,12 +410,12 @@ class IndicatorAnalysis:
         def calculate_up_trend(current_val, target_past_bars):
             # if max(target_past_bars) == min(target_past_bars):
             #     breakpoint()
-            return (1 - ((current_val - min(target_past_bars)) / (max(target_past_bars) - min(target_past_bars)))) * 0.5 + 0.5
-            # return ((current_val - min(target_past_bars)) / (max(target_past_bars) - min(target_past_bars))) * 0.5 + 0.5
+            # return (1 - ((current_val - min(target_past_bars)) / (max(target_past_bars) - min(target_past_bars)))) * 0.5 + 0.5
+            return ((current_val - min(target_past_bars)) / (max(target_past_bars) - min(target_past_bars))) * 0.5 + 0.5
 
         def calculate_down_trend(current_val, target_past_bars):
-            return (1 - ((current_val - min(target_past_bars)) / (max(target_past_bars) - min(target_past_bars)))) * 0.5
-            # return ((current_val - min(target_past_bars)) / (max(target_past_bars) - min(target_past_bars))) * 0.5
+            # return (1 - ((current_val - min(target_past_bars)) / (max(target_past_bars) - min(target_past_bars)))) * 0.5
+            return ((current_val - min(target_past_bars)) / (max(target_past_bars) - min(target_past_bars))) * 0.5
 
         # we calculate the trend
         target = args[0]
