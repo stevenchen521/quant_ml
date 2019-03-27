@@ -40,8 +40,10 @@ class Algorithm(BaseSLTFModel):
             self.rnn = self.add_rnn(1, self.hidden_size)
             self.rnn_output, _ = tf.nn.dynamic_rnn(self.rnn, self.x, dtype=tf.float32)
             self.rnn_output = self.rnn_output[:, -1]
-            self.rnn_output_dense = self.add_fc(self.rnn_output, 16)
-            self.y = self.add_fc(self.rnn_output_dense, self.y_space)
+            self.rnn_output_dense1 = self.add_fc(self.rnn_output, 16)
+            self.rnn_output_dense2 = self.add_fc(self.rnn_output_dense1, 16)
+            self.rnn_output_dense3 = self.add_fc(self.rnn_output_dense2, 16)
+            self.y = self.add_fc(self.rnn_output_dense3, self.y_space)
 
     def _init_op(self):
         with tf.variable_scope('loss'):
@@ -91,7 +93,7 @@ def main(args):
     market = args.market
     # market = 'future'
     # train_steps = args.train_steps
-    train_steps = 30000
+    train_steps = 15000
     # training_data_ratio = 0.98
     training_data_ratio = args.training_data_ratio
 
@@ -110,7 +112,7 @@ def main(args):
         "mode": mode,
         "hidden_size": 32,
         "enable_saver": True,
-        "keep_prob": 0.95,
+        "keep_prob": 0.8,
         "train_steps": train_steps,
         "enable_summary_writer": True,
         "save_path": os.path.join(CHECKPOINTS_DIR, "SL", model_name, market, "model"),
@@ -118,7 +120,7 @@ def main(args):
     })
 
     algorithm.run()
-    algorithm.eval_and_plot_nasdaq_backtest(code=codes[0], model_name=model_name)
+    algorithm.eval_and_plot_backtest(code=codes[0], model_name=model_name)
 
 
 if __name__ == '__main__':

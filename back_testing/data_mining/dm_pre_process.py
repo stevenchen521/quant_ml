@@ -1,4 +1,3 @@
-
 import pandas as pd
 from base.env.pre_process import Fetch, PreAnalyze, PostAnalyze
 from base.env.pre_process_conf import get_folder
@@ -11,7 +10,7 @@ strategy_data_mining = {
     'fetch': 'FetchCSVSingleDM',
     'pre_analyze': 'PreAnalyzeDataMining',
     'analyze': [
-                'trend|close|3_3_6',
+        'trend|close|3_3_6',
                 ],
     'post_analyze': 'PostAnalyzeDataMining',
     'label': "Tri"
@@ -71,4 +70,8 @@ class PostAnalyzeDataMining(PostAnalyze):
         # self._scaled_frames[state_code] = self._scaled_frames[state_code].dropna(axis=0)
         # df_dates = self._dates.loc[self._start_date:self._end_date]
         self._dates = list(self._post_frames[state_code].index)
+
+
+
+
 

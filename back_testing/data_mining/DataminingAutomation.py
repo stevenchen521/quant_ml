@@ -143,7 +143,7 @@ if __name__ == '__main__':
                              strategy=strategy_data_mining,
                              start_date="2008-01-01",
                              end_date="2019-02-01",
-                             bt_strategy_setup= bt_strategy_setup,
+                             bt_strategy_setup=bt_strategy_setup,
                              bt_datafeed_setup=bt_datafeed_setup)
     D.process()
 

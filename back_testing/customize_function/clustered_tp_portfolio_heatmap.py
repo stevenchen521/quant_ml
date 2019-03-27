@@ -124,7 +124,7 @@ def main():
         draw_heatmap(ticker, col='avg_period')
         draw_heatmap(ticker, col='frequency_pct')
         count = count + 1
-        print (count)
+        print(count)
 
 if __name__ == '__main__':
     main()
