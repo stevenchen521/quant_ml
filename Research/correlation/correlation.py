@@ -8,7 +8,7 @@ from matplotlib import pyplot as plt
 import datetime
 import numpy as np
 
-class FetchCSVSingleDM(Fetch):
+class FetchCSVResearch(Fetch):
 
     @staticmethod
     def fire(self):
@@ -32,7 +32,7 @@ class FetchCSVSingleDM(Fetch):
         self._dates = dates.loc[mask]
 
 
-class PreAnalyzeDataMining(PreAnalyze):
+class PreAnalyzeResearch(PreAnalyze):
 
     @staticmethod
     def fire(self, origin_frames):
@@ -40,7 +40,7 @@ class PreAnalyzeDataMining(PreAnalyze):
 
 
 
-class PostAnalyzeDataMining(PostAnalyze):
+class PostAnalyzeResearch(PostAnalyze):
     ### single csv data
     @staticmethod
     def fire(self, analyze_frames):
@@ -95,7 +95,7 @@ class CorrResearch(object):
 
 
     def format_postframe(self):
-        dates, _, _, post_frames = \
+        dates, a, b, post_frames = \
             pre_process.ProcessStrategy(  # action_fetch, action_pre_analyze, action_analyze, action_post_analyze,
                 self.code, self._start_date, self._end_date, MinMaxScaler(), self.config).process()
         self.post_frames = post_frames.get(self.code[0])
@@ -119,13 +119,8 @@ class CorrResearch(object):
         plt.close()
 
 
-
-
-
-
-
 if __name__ == '__main__':
-    D = CorrResearch(code=['SH_index'],
+    D = CorrResearch(code=['SH_index_all'],
                      config=active_config,
                      start_date="2008-01-01",
                      end_date="2019-02-01")
