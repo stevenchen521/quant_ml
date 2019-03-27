@@ -73,7 +73,7 @@ def main(args):
     market = args.market
     # market = 'future'
     # train_steps = args.train_steps
-    train_steps = 20000
+    train_steps = 30000
     training_data_ratio = 0.98
     # training_data_ratio = args.training_data_ratio
 
@@ -92,6 +92,7 @@ def main(args):
         "hidden_size": 5,
         "enable_saver": True,
         "train_steps": train_steps,
+        "keep_prob": 0.95,
         "enable_summary_writer": True,
         "save_path": os.path.join(CHECKPOINTS_DIR, "SL", model_name, market, "model"),
         "summary_path": os.path.join(CHECKPOINTS_DIR, "SL", model_name, market, "summary"),

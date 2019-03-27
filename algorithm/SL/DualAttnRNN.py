@@ -123,7 +123,7 @@ def main(args):
     env = Market(codes, start_date="2001-01-3", end_date="2019-02-27", **{
         "market": market,
         "use_sequence": True,
-        "seq_length": 5,
+        "seq_length": 20,
         "scaler": MinMaxScaler(feature_range=(0, 1)),
         "mix_index_state": True,
         "training_data_ratio": training_data_ratio,
