@@ -1,6 +1,6 @@
 from base.env.pre_process import Fetch, PreAnalyze, PostAnalyze
 import pandas as pd
-from Research.correlation.config import active_config
+from Research.correlation.corr_config import active_config
 import base.env.pre_process as pre_process
 from sklearn.preprocessing import MinMaxScaler
 import seaborn as sns
@@ -104,11 +104,11 @@ class CorrResearch(object):
     def generate_correlation_graph(self):
         self.format_postframe()
         self.corr = self.post_frames.corr()
-        mask = np.zeros_like(self.corr)
-        mask[np.triu_indices_from(mask)] = True
+        # mask = np.zeros_like(self.corr)
+        # mask[np.triu_indices_from(mask)] = True
         plt.figure(figsize=(25, 20))
         sns.set(font_scale=1.4)
-        ax = sns.heatmap(self.corr, mask=mask, annot=True)
+        ax = sns.heatmap(self.corr, annot=True)
         plt.xticks(rotation=45)
         plt.yticks(rotation=45)
         # plt.show()

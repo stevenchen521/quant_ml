@@ -7,7 +7,6 @@ import pandas as pd
 from backtrader.utils.py3 import items, iteritems
 from openpyxl import load_workbook
 import os
-import sys
 import re
 
 
@@ -27,9 +26,15 @@ def preprocess_for_backtest(df, add_col=None):
     return df
 
 
+def get_project_rootpath(project_name):
+    import os
+    file_path = os.getcwd()
+    my_path = re.findall(r'.*{}'.format(project_name), file_path)[0]
+    return my_path
+
 
 class BacktestSummary(object):
-    def __init__(self, domain_name, name , results, input_df, commission, save_path, groupby_list=None):
+    def __init__(self, domain_name, name, results, input_df, commission, save_path, groupby_list=None):
         self.domain_name = domain_name
         self.groupby_list = groupby_list
         self.results = results
@@ -136,7 +141,6 @@ class BacktestSummary(object):
         last_date = pd.to_datetime(self.input_df['date'].tail(1).iloc[0])
         detail_df = pd.DataFrame()
         end_date = self.input_df.tail(1).date.values
-        # for i in [35]:
         for i in range(len(self.results)):
             if len(self.results) > 1:
                 strats = self.results[i][0]
@@ -199,7 +203,8 @@ class BacktestSummary(object):
                         transactions_df[ele] = strats.params.trade_para[count]
                         count = count + 1
             detail_df = detail_df.append(transactions_df, ignore_index=True)
-
+        if len(detail_df) == 0:
+            raise IOError("no efficient record")
         detail_df['Sell_date'] = detail_df['Sell_date'].values.astype('datetime64[D]')
         detail_df['Buy_date'] = detail_df['Buy_date'].values.astype('datetime64[D]')
         detail_df['period'] = detail_df.apply(lambda row: (row['Sell_date'] - row['Buy_date']).days, axis=1)
@@ -269,7 +274,7 @@ class BackTesting(object):
     '''
 
     def __init__(self, MyStrategy, Datafeed, input_dict, domain_name, summary_path=None,
-                 save_input_dict=False, commission=0.002, maxcpu=2, initialcash=10000000):
+                 save_input_dict=False, commission=0.002, maxcpu=2, initialcash=10000000, plot = False):
         self.MyStrategy = MyStrategy
         self.Datafeed = Datafeed
         self.input_dict = input_dict
@@ -290,6 +295,7 @@ class BackTesting(object):
         self.save_input_dict = save_input_dict
         self.default_col = ['date', 'open', 'high', 'low', 'close', 'volume', 'openinterest']
         self.backtest_col = self.default_col
+        self.plot = plot
 
     '''
     input_dict: default, false, if True, save input dict into summary excel
@@ -336,6 +342,10 @@ class BackTesting(object):
             cerebro.broker.setcommission(commission=self.commission)
             print('Starting Portfolio Value: %.2f' % cerebro.broker.getvalue())
             results = cerebro.run()
+            if self.plot:
+                cerebro.plot()
+            else:
+                pass
             '''
             Three input for BecktestSummary:
             results: result of cerebro.run()

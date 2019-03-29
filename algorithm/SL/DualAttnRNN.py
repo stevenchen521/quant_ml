@@ -2,13 +2,13 @@
 import tensorflow as tf
 import logging
 import os
-
 from algorithm import config
 from base.env.market import Market
 from checkpoints import CHECKPOINTS_DIR
 from base.algorithm.model import BaseSLTFModel
 from sklearn.preprocessing import MinMaxScaler
 from helper.args_parser import model_launcher_parser
+from back_testing.localplayground.OTr_back_test import PandasDeepLearning, MyStrategy
 
 
 class Algorithm(BaseSLTFModel):
@@ -109,7 +109,7 @@ class Algorithm(BaseSLTFModel):
 def main(args):
     mode = args.mode
     # mode = "test"
-    codes = ["SH_index"]
+    codes = ["SH_index_all"]
     # codes = ["600036", "601998"]
     # codes = args.codes
     # codes = ["AU88", "RB88", "CU88", "AL88"]
@@ -120,21 +120,21 @@ def main(args):
     # training_data_ratio = 0.98
     training_data_ratio = args.training_data_ratio
 
-    env = Market(codes, start_date="2001-01-3", end_date="2019-02-27", **{
+    env = Market(codes, start_date="2001-01-3", end_date="2019-03-08", **{
         "market": market,
         "use_sequence": True,
-        "seq_length": 20,
+        "seq_length": 3,
         "scaler": MinMaxScaler(feature_range=(0, 1)),
         "mix_index_state": True,
-        "training_data_ratio": training_data_ratio,
+        "training_data_ratio": 0.8,
     })
 
     model_name = os.path.basename(__file__).split('.')[0]
 
     algorithm = Algorithm(tf.Session(config=config), env, env.seq_length, env.data_dim, env.code_count, **{
         "mode": mode,
-        "layer_size": 2,
-        "hidden_size": 12,
+        "layer_size": 256,
+        "hidden_size": 128,
         # "keep_prob": 0.98,   # drop out size = 1 - keep_prob
         "enable_saver": True,
         "train_steps": train_steps,
@@ -144,7 +144,13 @@ def main(args):
     })
 
     algorithm.run()
+    # algorithm.eval_and_plot_backtest_single(code=codes[0],
+    #                                         model_name=model_name,
+    #                                         MyStrategy=MyStrategy,
+    #                                         DataFeed=PandasDeepLearning,
+    #                                         plot=True)
     algorithm.eval_and_plot_backtest(code=codes[0], model_name=model_name)
+
 
 
 if __name__ == '__main__':

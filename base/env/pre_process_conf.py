@@ -67,43 +67,63 @@ third one: future bar length, focus on return in future length
 strategy_SH_index = {
     'name': 'strategy_SH_index',
     'module': 'base.env.pre_process',
-    'source': "{}/../../data/SH_index.csv".format(get_folder(__file__)),
+    'source': "{}/../../data/SH_index_all.csv".format(get_folder(__file__)),
     'fetch': 'FetchCSVSingle',
     'pre_analyze': 'PreAnalyzeDefault',
     'analyze': [
-                # 'ma|close|5_0',
-                # 'ma|close|5_1',
-                # 'ma|close|5_2',
-                # 'rsi|close|14',
-                # 'macd|close|12_26_9',
-                # 'minus_dm|high_low|14', 'plus_dm|high_low|14', 'adx|high_low_close|14', # Directional Movement Index(DMI)
-                'stoch|high_low_close|14_3_0_3_0',
-                # 'stoch|high_low_close|14_5_0_5_0',
-                # 'willr|high_low_close|14',
-                # 'apo|close|12_26_0',
-                'trend_backward|close|5_5_3',
-                'trend_backward|close|5_5_2',
-                # 'trend_backward|close|10_3_10',
-                # 'trend_backward|close|10_3_5',
-                # 'roc|close|5',
-                # 'rocp|close|5',
-                'bop|open_high_low_close',
-                'obv|close_volume',
-                'trend|close|5_5_3'],
+        # 'ma|close|5_0',
+        # 'ma|close|5_1',
+        # 'ma|close|5_2',
+        # 'rsi|close|14',
+        # 'macd|close|12_26_9',
+        # 'minus_dm|high_low|14', 'plus_dm|high_low|14', 'adx|high_low_close|14', # Directional Movement Index(DMI)
+        'stoch|high_low_close|14_3_0_3_0',
+        # 'stoch|high_low_close|14_5_0_5_0',
+        # 'willr|high_low_close|14',
+        # 'apo|close|12_26_0',
+        'trend_backward|on|10_5_2',
+        'trend_backward|close|10_5_3',
+        # 'trend_backward|close|10_4_4',
+        # 'trend_backward|close|10_5_5',
+        # 'trend_backward|close|10_10_10',
+        # 'trend_backward|close|10_20_20',
+        # 'trend_backward|close|10_3_10',
+        # 'trend_backward|close|10_3_5',
+        # 'roc|close|20',
+        # 'rocp|close|5',
+        'bop|open_high_low_close',
+        'obv|close_volume',
+        'trend|close|10_5_20'],
     'post_analyze': 'PostAnalyzeNASDAQ',
-    'label': 'trend|close|5_5_3'
+    'label': 'trend|close|10_5_20'
     # 'post_analyze': 'PostAnalyzeDefault',
 }
 
 #
-# strategy_SH_index = {
-#     'module': 'base.env.pre_process',
-#     'source': '../../data/SH_index.csv',
-#     'fetch': 'FetchCSVSingle',
-#     'pre_analyze': 'PreAnalyzeDefault',
-#     'analyze': ['rsi|close|14', 'macd|close|12_26_9', 'trend|close|5_5_20'],
-#     'post_analyze': 'PostAnalyzeDefault',
-# }
+research_config = {
+    'name': 'data_mining',
+    'module': 'base.env.pre_process',
+    'source': "{}/../../data/SH_index_all.csv".format(get_folder(__file__)),
+    'fetch': 'FetchCSVSingle',
+    'pre_analyze': 'PreAnalyzeDefault',
+    'analyze': [
+        # 'roc|close|10',
+        'stoch|high_low_close|14_3_0_3_0',
+        'trend_backward|close|10_5_2',
+        # 'trend_backward|open|10_5_2',
+        # 'trend_backward|on|10_5_2',
+        # 'trend_backward|6m|10_5_2',
+        # 'bop|open_high_low_close',
+        # 'obv|close_volume',
+        'ad|high_low_close_volume',
+        # 'adosc|high_low_close_volume|3_10',
+        # 'rsi|close|14',
+        'stoch|high_low_close|14_3',
+        'trend|close|5_5_20',
+                ],
+    'post_analyze': 'PostAnalyzeNASDAQ',
+    'label': 'trend|close|5_5_20'
+}
 
 
 # active_stragery = strategy_nasdaq

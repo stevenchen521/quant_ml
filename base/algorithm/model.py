@@ -7,8 +7,16 @@ from abc import abstractmethod
 from helper import data_ploter
 from tensorflow.contrib import rnn
 from helper.data_logger import generate_algorithm_logger
+import re
+from back_testing.common.common import BackTesting
 import math
 from functools import reduce
+
+def get_project_rootpath(project_name):
+    import os
+    file_path = os.getcwd()
+    my_path = re.findall(r'.*{}'.format(project_name), file_path)[0]
+    return my_path
 
 
 class BaseTFModel(object):
@@ -283,24 +291,29 @@ class BaseSLTFModel(BaseTFModel):
                                       y,
                                       label,
                                       self.save_path)
-        return self.format_model_output(x, label, y)
-
-
-    def format_model_output(self, x, label, y):
         date_index = self.env.dates[self.env.e_data_indices[0] + self.env.seq_length + 1:]
-        frames_output = pd.DataFrame({'label': label.flatten(),
-                                     'y': y.flatten()}, index=date_index)
-        frames_test = self.env.origin_frames[self.env.codes[0]].loc[date_index]
-        frames_output = pd.concat([frames_test, frames_output], axis=1)
-        frames_output['date'] = frames_output.index
-        frames_output['date'] = frames_output['date'].apply(
-            lambda x: pd.to_datetime(x).strftime("%Y-%m-%d %H:%M:%S"))
-        # frames_output.dropna(how="any", inplace=True)
-        # frames_output.set_index(['Date'], inplace=True)
-        frames_output['openinterest'] = 0
-        col_order = ['date', 'open', 'high', 'low', 'close', 'volume', 'openinterest', 'label', 'y']
-        frames_output = frames_output[col_order]
-        return frames_output
+        dataframe_backtest = pd.DataFrame({'label': label.flatten(),
+                                           'y': y.flatten()}, index=date_index)
+        original_frames = self.env.origin_frames[self.env.codes[0]][self.env.e_data_indices[0] + self.env.seq_length:]
+        dataframe_backtest = pd.concat([dataframe_backtest, original_frames], axis=1)
+        return dataframe_backtest
+
+
+    # def format_model_output(self, x, label, y):
+    #     date_index = self.env.dates[self.env.e_data_indices[0] + self.env.seq_length + 1:]
+    #     frames_output = pd.DataFrame({'label': label.flatten(),
+    #                                  'y': y.flatten()}, index=date_index)
+    #     frames_test = self.env.origin_frames[self.env.codes[0]].loc[date_index]
+    #     frames_output = pd.concat([frames_test, frames_output], axis=1)
+    #     frames_output['date'] = frames_output.index
+    #     frames_output['date'] = frames_output['date'].apply(
+    #         lambda x: pd.to_datetime(x).strftime("%Y-%m-%d %H:%M:%S"))
+    #     # frames_output.dropna(how="any", inplace=True)
+    #     # frames_output.set_index(['Date'], inplace=True)
+    #     frames_output['openinterest'] = 0
+    #     col_order = ['date', 'open', 'high', 'low', 'close', 'volume', 'openinterest', 'label', 'y']
+    #     frames_output = frames_output[col_order]
+    #     return frames_output
 
 
     def eval_and_plot_backtest(self, code, model_name):
@@ -317,21 +330,57 @@ class BaseSLTFModel(BaseTFModel):
                                       self.save_path)
         # reformat the data and transformed the data to back testing data
         date_index = self.env.dates[self.env.e_data_indices[0] + self.env.seq_length + 1:]
-        dataframe_backtest = pd.DataFrame({'Tri': label.flatten(),
-                                           'OTri': y.flatten()}, index=date_index)
-        original_frames = self.env.origin_frames[self.env.codes[0]][self.env.e_data_indices[0] + self.env.seq_length: ]
+        dataframe_backtest = pd.DataFrame({'label': label.flatten(),
+                                           'y': y.flatten()}, index=date_index)
+        original_frames = self.env.origin_frames[self.env.codes[0]][self.env.e_data_indices[0] + self.env.seq_length:]
         dataframe_backtest = pd.concat([dataframe_backtest, original_frames], axis=1)
-
-        dataframe_backtest['Date'] = dataframe_backtest.index
-        dataframe_backtest['Date'] = dataframe_backtest['Date'].apply(lambda x: pd.to_datetime(x).strftime("%Y-%m-%d %H:%M:%S"))
+        dataframe_backtest['date'] = dataframe_backtest.index
+        dataframe_backtest['date'] = dataframe_backtest['date'].apply(lambda x: pd.to_datetime(x).strftime("%Y-%m-%d %H:%M:%S"))
         dataframe_backtest.dropna(how="any", inplace=True)
-        dataframe_backtest.set_index(['Date'], inplace=True)
+        dataframe_backtest.set_index(['date'], inplace=True)
         dataframe_backtest['openinterest'] = 0
-        col_order = ['open', 'high', 'low', 'close', 'volume', 'openinterest', 'OTri', 'Tri']
+        col_order = ['open', 'high', 'low', 'close', 'volume', 'openinterest', 'label', 'y']
         dataframe_backtest = dataframe_backtest[col_order]
         # dataframe_backtest = dataframe_backtest.round(2)
         dataframe_backtest.to_csv("../../back_testing/data/{}_{}_for_backtest.csv".format(model_name, code), date_format='%Y-%m-%d %H:%M:%S')
         print ('dataframe is updated')
+
+
+    # @staticmethod
+    def format_backtest_frame(self, dataframe_backtest):
+        dataframe_backtest['date'] = dataframe_backtest.index
+        dataframe_backtest['date'] = dataframe_backtest['date'].apply(lambda x: pd.to_datetime(x, format='%Y-%m-%d %H:%M:%S'))
+        dataframe_backtest.index = range(len(dataframe_backtest))
+        dataframe_backtest.dropna(how="any", inplace=True)
+        # dataframe_backtest.set_index(['date'], inplace=True)
+        dataframe_backtest['openinterest'] = 0
+        col_order = ['date', 'open', 'high', 'low', 'close', 'volume', 'openinterest', 'label', 'y']
+        dataframe_backtest = dataframe_backtest[col_order]
+        return dataframe_backtest
+
+
+    def eval_and_plot_backtest_single(self, code, model_name, DataFeed, MyStrategy, summary_path = False, plot = False):
+        df = self.eval_and_plot()
+        # reformat the data and transformed the data to back testing data
+        dataframe_backtest = self.format_backtest_frame(df)
+        mypath = get_project_rootpath('quant_ml')
+        if summary_path:
+            save_path = summary_path
+        else:
+            save_path = mypath + "/back_testing/summary_excel/{}_{}_backtest_summary.xlsx".format(model_name, code)
+        data_dict = dict()
+        dataframe_backtest.index = range(len(dataframe_backtest))
+        data_dict[code] = dataframe_backtest
+        B = BackTesting(
+            input_dict=data_dict,
+            MyStrategy=MyStrategy,
+            Datafeed=DataFeed,
+            domain_name=model_name,
+            summary_path=save_path,
+            save_input_dict=True,
+            plot=plot)
+        B.backtest()
+
 
     def close_sesstion(self):
         self.session.close()
