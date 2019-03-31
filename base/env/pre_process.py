@@ -424,6 +424,7 @@ class IndicatorAnalysis:
         ma_bars = int(args[1])
         trend_bars = int(args[2])
         past_bars = int(args[3])
+        input_col = args[4]
 
         # get moving average
         ma = talib.MA(target, timeperiod=ma_bars)
@@ -458,7 +459,8 @@ class IndicatorAnalysis:
         # self._label = 'trend_{}'.format("_".join([str(v) for v in args[1:4]]))
         # return pd.DataFrame(data=result, index=self._index.flatten(), columns=[self._label])
         args_str = "_".join([str(v) for v in args[1:4]])
-        return pd.DataFrame(data=result, index=self._index.flatten(), columns=["trend_backward_{}".format(args_str)])
+        return pd.DataFrame(data=result, index=self._index.flatten(), columns=["trend_backward|{}|{}".format(input_col[0], args_str)])
+
 
     @catch_exception(LOGGER)
     def analyze(self):
@@ -491,9 +493,7 @@ class IndicatorAnalysis:
             method = getattr(self, method_name, None)
             if method is not None:
 
-
-
-                result = method(*input, *args)
+                result = method(*input, *args, input_col)
 
                 if df_indicators.empty:
                     df_indicators = result if result is not None else df_indicators
@@ -519,7 +519,7 @@ class IndicatorAnalysis:
                 args_str = "_".join([str(v) for v in args])
                 # if isinstance(result, pd.core.series.Series):
                 if not isinstance(result, tuple):
-                    df_result = pd.DataFrame(data=result, index=self._index.flatten(), columns=["{}_{}".format(method_name,args_str)])
+                    df_result = pd.DataFrame(data=result, index=self._index.flatten(), columns=["{}|{}|{}".format(method_name, input_col[0], args_str)])
                 else:
                     for idx, res in enumerate(result):
                         if idx == 0:
