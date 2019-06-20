@@ -9,13 +9,12 @@ research_config = {
     'analyze': [
         # 'roc|close|20',
         # 'trend_backward|close|10_5_2',
-        'trend_backward|open|10_5_2',
-        'trend_backward|high|10_5_2',
-        'trend_backward|low|10_5_2',
-        'trend_backward|on|10_5_2',
-        # 'trend_backward|1m|10_5_2',
-        # 'trend_backward|6m|10_5_2',
+        'trend_backward|open|10_5_10',
+        'trend_backward|on|10_5_10',
+        'trend_backward|6m|10_5_10',
         # 'trend_backward|IS_EPS|10_5_2',
+        'trend_backward|nasclose|10_5_10',
+
         'trend|close|10_5_20',
         'bop|open_high_low_close',
         # 'obv|close_volume',

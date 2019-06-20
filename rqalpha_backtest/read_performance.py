@@ -1,4 +1,6 @@
 import pandas as pd
+from rqalpha_backtest.Base import pickle_to_excel
+pickle_to_excel(pickle_path='combine_RSI_ma_slope.pkl')
 # dict = pd.read_pickle('bolling_bond.pkl')
 
 # print (dict)
@@ -13,10 +15,11 @@ import pandas as pd
 #     """
 #     [sys_analyser] draw result DataFrame
 #     """
-import pandas as pd
+# import pandas as pd
 from rqalpha.mod.rqalpha_mod_sys_analyser.plot import plot_result
 
-# result_dict = pd.read_pickle('Portfolio_RSI.pkl')
-pd.read_pickle('bolling_bond.pkl').plots.to_excel('C:\\Users\wilsonZhang\Desktop\\bolling_bond_plot.xlsx')
+# result_dict = pd.read_pickle('combine_RSI_ma_slope.pkl')
+
+# pd.read_pickle('bolling_bond.pkl').plots.to_excel('C:\\Users\wilsonZhang\Desktop\\bolling_bond_plot.xlsx')
 # print (result_dict)
 # plot_result(result_dict)

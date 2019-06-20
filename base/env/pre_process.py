@@ -21,7 +21,7 @@ class Action(metaclass=ABCMeta):
 
     @staticmethod
     @abstractmethod
-    def fire(self, data_frame):
+    def fire(self, data_frame, col_order):
         raise NotImplementedError
 
 
@@ -29,7 +29,7 @@ class Fetch(Action):
 
     @staticmethod
     @abstractmethod
-    def fire(self, data_frame=None):
+    def fire(self, data_frame=None, col_order=None):
         raise NotImplementedError
 
 
@@ -37,7 +37,7 @@ class PreAnalyze(Action):
 
     @staticmethod
     @abstractmethod
-    def fire(self, origin_frame):
+    def fire(self, origin_frame, col_order=None):
         print('this is pre analyze')
         # raise NotImplementedError
 
@@ -61,7 +61,7 @@ class PostAnalyze(Action):
 
     @staticmethod
     @abstractmethod
-    def fire(self, data_frame):
+    def fire(self, data_frame, col_order=None):
         raise NotImplementedError
         # print("this is PostAnalyze")
         # for state_code in self._state_codes:
@@ -96,7 +96,7 @@ class FetchCSVSingle(Fetch):
 class PreAnalyzeDefault(PreAnalyze):
 
     @staticmethod
-    def fire(self, origin_frames):
+    def fire(self, origin_frames, col_order=None):
         self._pre_frames = origin_frames
 
 
@@ -104,7 +104,7 @@ class PreAnalyzeDefault(PreAnalyze):
 class PostAnalyzeDefault(PostAnalyze):
     ### single csv data
     @staticmethod
-    def fire(self, analyze_frames):
+    def fire(self, analyze_frames, col_order=None):
         # print("this is PostAnalyzeDefault")
         scales = self._scaler
         # for state_code in self._state_codes:
@@ -127,25 +127,47 @@ class PostAnalyzeDefault(PostAnalyze):
 class PostAnalyzeNASDAQ(PostAnalyze):
     ### single csv data
     @staticmethod
-    def fire(self, analyze_frames):
+    def fire(self, analyze_frames, col_order=None):
         # print("this is PostAnalyzeDefault")
         scales = self._scaler
         # for state_code in self._state_codes:
         #     self._analyze_frames[state_code].to_csv("../../back_testing/data/{}.csv".format(state_code))
         post_frame = analyze_frames[self._state_code].copy()
         # post_frame = post_frame.drop(['high', 'low', 'open'], axis=1)
-        if self._label != 'close':
-            post_frame = post_frame.drop(['close'], axis=1)
-            post_frame = post_frame.rename(index=str, columns={"close":"close1", self._label: "close"})
-
+        # if self._label != 'close':
+        #     post_frame = post_frame.drop(['close'], axis=1)
+        #     post_frame = post_frame.rename(index=str, columns={"close": "close1", self._label: "close"})
         new_columns = post_frame.columns
-
         scales.fit(post_frame)
         instruments_scaled = scales.transform(post_frame)
         post_frame = instruments_scaled
         self._post_frames[self._state_code] = pd.DataFrame(data=post_frame, index=self._dates.get_values().flatten(),
                                                            columns=new_columns)
+        state_code = self._state_code
+        self._origin_frames[state_code] = self._origin_frames[state_code].dropna(axis=0)
+        self._post_frames[state_code] = self._post_frames[state_code].dropna(axis=0)
+        # self._scaled_frames[state_code] = self._scaled_frames[state_code].dropna(axis=0)
+        # df_dates = self._dates.loc[self._start_date:self._end_date]
+        self._dates = list(self._post_frames[state_code].index)
 
+
+class PostAnalyzeMIlstm(PostAnalyze):
+    ### single csv data
+    @staticmethod
+    def fire(self, analyze_frames, col_order):
+        scales = self._scaler
+        post_frame = analyze_frames[self._state_code].copy()
+        # post_frame = post_frame.drop(['high', 'low', 'open'], axis=1)
+        if col_order:
+            post_frame = post_frame[col_order]
+        else:
+            pass
+        # self._post_frames[self._state_code] = post_frame
+        scales.fit(post_frame)
+        instruments_scaled = scales.transform(post_frame)
+        post_frame = instruments_scaled
+        self._post_frames[self._state_code] = pd.DataFrame(data=post_frame, index=self._dates.get_values().flatten(),
+                                                           columns=col_order)
         state_code = self._state_code
         self._origin_frames[state_code] = self._origin_frames[state_code].dropna(axis=0)
         self._post_frames[state_code] = self._post_frames[state_code].dropna(axis=0)
@@ -188,7 +210,7 @@ def set_strategy_element(strategy, element_name, value):
 class ProcessStrategy(object):
 
     def __init__(self, # fetch, pre_analyze, indicators, post_analyze,
-                 state_codes, start_date, end_date, scaler, pre_process_strategy):
+                 state_codes, start_date, end_date, scaler, pre_process_strategy, col_order=None):
         self._fetch, self._pre_analyze, self._indicators , self._post_analyze, self._label = get_active_strategy(pre_process_strategy)
 
         # self._fetch = action_fetch
@@ -208,6 +230,7 @@ class ProcessStrategy(object):
         self._pre_frames = dict()
         self._analyze_frames = dict()   # with analysis added
         self._post_frames = dict()
+        self._col_order = col_order
         # self._scaled_frames = dict()
 
     @classmethod
@@ -219,7 +242,7 @@ class ProcessStrategy(object):
         self._fetch.fire(self)
         self._pre_analyze.fire(self, self._origin_frames)
         self._analyze.fire(self, self._pre_frames, self._label)
-        self._post_analyze.fire(self, self._analyze_frames)
+        self._post_analyze.fire(self, self._analyze_frames, self._col_order)
 
         return self._dates, self._post_frames, self._origin_frames, self._post_frames
 
@@ -358,6 +381,7 @@ class IndicatorAnalysis:
         # self._label = 'trend_{}'.format("_".join([str(v) for v in args[1:4]]))
         return pd.DataFrame(data=result, index=self._index.flatten(), columns=[self._label])
 
+
     def trend_backward(self, *args):
         """  If closing price value leads its MA 15 and MA 15 is rising for last 5 days then trend is Uptrend
         i.e. trend signal is 1.
@@ -461,6 +485,54 @@ class IndicatorAnalysis:
         args_str = "_".join([str(v) for v in args[1:4]])
         return pd.DataFrame(data=result, index=self._index.flatten(), columns=["trend_backward|{}|{}".format(input_col[0], args_str)])
 
+    # Fourier transformation
+    def fft(self, *args):
+        target = args[0]
+        input_col = args[-1][0]
+        # args_str = ["FTT{}Comps".format(x) for x in args[1:]]
+        result = target.copy()
+        fft_list = np.fft.fft(result)
+        df_all = pd.DataFrame(index=self._index.flatten())
+        for num_ in args[1:-1]:
+            col_name_str = "FFT{}|{}Comps".format(input_col, num_)
+            fft_list_temp = np.copy(fft_list)
+            fft_list_temp[num_:-num_] = 0
+            fft_list_temp = np.abs(np.fft.ifft(fft_list_temp))
+            df_all[col_name_str] = fft_list_temp
+        return df_all
+
+
+     #input (p_d_q)
+     #p: periods taken for auto-regressive model
+     #d: Intergrated order, difference
+    #q: moving average, periods in moving average model
+    def arima(self, *args):
+        from statsmodels.tsa.arima_model import ARIMA
+        target = args[0]
+        p = args[1]
+        d = args[2]
+        q = args[3]
+        input_col = args[-1][0]
+        train = target[:11]
+        test = target[11:]
+        history = [x for x in train]
+        predictions = list()
+        for t in range(len(test)):
+            try:
+                model = ARIMA(history, order=(p, d, q))
+                model_fit = model.fit(disp=0)
+                output = model_fit.forecast()
+                yhat = output[0]
+            except Exception:
+                yhat = np.nan
+            predictions.append(yhat)
+            obs = test[t]
+            history.append(obs)
+        predictions = [np.nan] * 11 + predictions
+        print(predictions)
+        args_str = "_".join([str(v) for v in args[1:4]])
+        return pd.DataFrame(data=predictions, index=self._index.flatten(),
+                            columns=["arima|{}|{}".format(input_col, args_str)])
 
     @catch_exception(LOGGER)
     def analyze(self):

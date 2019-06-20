@@ -25,7 +25,7 @@ class Market(object):
         CSV = 'CSV'
         MONGODB = 'MongoDB'
 
-    def __init__(self, codes, start_date="2008-01-01", end_date="2018-01-01", col_y = "close" , **options):
+    def __init__(self, codes, start_date="2008-01-01", end_date="2018-01-01", col_order = None, **options):
         # Initialize codes.
         self.codes = codes
         self.index_codes = []
@@ -55,6 +55,7 @@ class Market(object):
         self.next_date = None
         self.iter_dates = None
         self.current_date = None
+        self.col_order = col_order
 
         # Initialize parameters.
         self._init_options(**options)
@@ -147,7 +148,7 @@ class Market(object):
         # action_fetch, action_pre_analyze, action_analyze, action_post_analyze = pre_process.get_active_strategy()
         self.dates, self.scaled_frames, self.origin_frames, self.post_frames = \
             pre_process.ProcessStrategy(#action_fetch, action_pre_analyze, action_analyze, action_post_analyze,
-                                        self.state_codes, start_date, end_date, self.scaler[0], self.pre_process_strategy).process()
+                                        self.state_codes, start_date, end_date, self.scaler[0], self.pre_process_strategy, self.col_order).process()
 
     def _init_env_data(self):
         if not self.use_sequence:
@@ -193,23 +194,23 @@ class Market(object):
                 # Get scaled frame by code.
                 scaled_frame = self.scaled_frames[code]
                 # Get instrument data x.
-                instruments_x = scaled_frame.iloc[date_index - self.seq_length: date_index]
-                try:
-                    instruments_x = instruments_x.drop(["close"], axis=1) # added by steven, trend patch
-                except Exception:
-                    pass
-                # instruments_x = scaled_frame.iloc[date_index - self.seq_length: date_index+1]
+                label = self.pre_process_strategy['label']# added by wilson
+                instruments_x = scaled_frame.drop([label], axis=1).iloc[date_index - self.seq_length: date_index]
+                # try:
+                #     instruments_x = instruments_x.drop(["close"], axis=1) # added by steven, trend patch
+                # except Exception:
+                #     pass
                 data_x.append(np.array(instruments_x))
                 # Get instrument data y.
                 if index < date_index - 1:
                     if date_index < self.bound_index:
                         # Get y, y is not at date index, but plus 1. (Training Set)
                         # instruments_y = scaled_frame.iloc[date_index + 1]['close']
-                        instruments_y = scaled_frame.iloc[date_index]['close'] #TODO confirm is this a bug?
+                        instruments_y = scaled_frame.iloc[date_index][label] #TODO confirm is this a bug?
                     else:
                         # Get y, y is at date index. (Test Set)
                         # instruments_y = scaled_frame.iloc[date_index + 1]['close']
-                        instruments_y = scaled_frame.iloc[date_index]['close'] #TODO confirm is this a bug?
+                        instruments_y = scaled_frame.iloc[date_index][label] #TODO confirm is this a bug?
                     data_y.append(np.array(instruments_y))
             # Convert list to array.
             data_x = np.array(data_x)

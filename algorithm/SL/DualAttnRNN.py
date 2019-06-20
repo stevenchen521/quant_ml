@@ -120,10 +120,10 @@ def main(args):
     # training_data_ratio = 0.98
     training_data_ratio = args.training_data_ratio
 
-    env = Market(codes, start_date="2001-01-3", end_date="2019-03-08", **{
+    env = Market(codes, start_date="2001-01-03", end_date="2019-03-08", **{
         "market": market,
         "use_sequence": True,
-        "seq_length": 3,
+        "seq_length": 5,
         "scaler": MinMaxScaler(feature_range=(0, 1)),
         "mix_index_state": True,
         "training_data_ratio": 0.8,
@@ -133,8 +133,8 @@ def main(args):
 
     algorithm = Algorithm(tf.Session(config=config), env, env.seq_length, env.data_dim, env.code_count, **{
         "mode": mode,
-        "layer_size": 256,
-        "hidden_size": 128,
+        "layer_size": 2,
+        "hidden_size": 48,
         # "keep_prob": 0.98,   # drop out size = 1 - keep_prob
         "enable_saver": True,
         "train_steps": train_steps,
@@ -150,6 +150,7 @@ def main(args):
     #                                         DataFeed=PandasDeepLearning,
     #                                         plot=True)
     algorithm.eval_and_plot_backtest(code=codes[0], model_name=model_name)
+    # wirter = tf.summary.FileWriter("")
 
 
 

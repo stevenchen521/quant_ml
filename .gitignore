@@ -110,3 +110,4 @@ venv.bak/
 
 !/back_testing/data/nasdaq.csv
 !/back_testing/data/
+/rqalpha_backtest/__init__.py

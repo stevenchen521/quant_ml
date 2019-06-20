@@ -43,7 +43,7 @@ class PreAnalyzeResearch(PreAnalyze):
 class PostAnalyzeResearch(PostAnalyze):
     ### single csv data
     @staticmethod
-    def fire(self, analyze_frames):
+    def fire(self, analyze_frames, col_order=None):
         # print("this is PostAnalyzeDefault")
         # scales = self._scaler
         # for state_code in self._state_codes:

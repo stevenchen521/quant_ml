@@ -70,7 +70,7 @@ class Algorithm(BaseSLTFModel):
         # tf.Variable(10, name=_WEIGHT_FINAL_ATTN)
         self._w_f_attn = tf.get_variable(_WEIGHT_FINAL_ATTN, [self.hidden_size, self.hidden_size], initializer=initializer)
         self._b_f_attn = tf.get_variable(_BIAS_FINAL_ATTN, [self.hidden_size], initializer=initializer)
-        self._v_f_attn = tf.get_variable(_VECTOR_FINAL_ATTN, [self.hidden_size,1], initializer=initializer)
+        self._v_f_attn = tf.get_variable(_VECTOR_FINAL_ATTN, [self.hidden_size, 1], initializer=initializer)
 
         self._w_activation = tf.get_variable(_WEIGHT_ACTIVATION, [1, self.hidden_size], initializer=initializer)
         self._b_activation = tf.get_variable(_BIAS_ACTIVATION, [1], initializer=initializer)
@@ -154,7 +154,7 @@ class Algorithm(BaseSLTFModel):
                 (out_mi_x, beta_x) = x
                 return matmul(a=beta_x, b=out_mi_x, transpose_a=True)
 
-            y_tilde = tf.scan(f, (out_mi, beta) , initializer=scan_init)
+            y_tilde = tf.scan(f, (out_mi, beta), initializer=scan_init)
 
         with tf.variable_scope("activation"):
 
@@ -409,11 +409,12 @@ def main(args):
         "scaler": MinMaxScaler(feature_range=(0, 1)),
         "mix_index_state": True,
         "training_data_ratio": training_data_ratio,
+
     })
 
     model_name = os.path.basename(__file__).split('.')[0]
 
-    algorithm = Algorithm(tf.Session(config=config), env, env.seq_length, env.data_dim, [1, 4, 3, 1], env.code_count, **{
+    algorithm = Algorithm(tf.Session(config=config), env, env.seq_length, env.data_dim, [5, 6, 6, 1], env.code_count, **{
         "mode": mode,
         "layer_size": 1,
         "hidden_size": 32,

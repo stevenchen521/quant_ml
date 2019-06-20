@@ -148,9 +148,9 @@ class Algorithm(BaseRLTFModel):
 def main(args):
     mode = args.mode
     # mode = 'test'
-    codes = args.codes
+    # codes = args.codes
     # codes = ["AU88", "RB88", "CU88", "AL88"]
-    # codes = ["T9999"]
+    codes = ["SH_index_all"]
     market = args.market
     # market = 'future'
     episode = args.episode

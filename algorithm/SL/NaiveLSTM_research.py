@@ -40,10 +40,10 @@ class Algorithm(BaseSLTFModel):
             self.rnn = self.add_rnn(1, self.hidden_size)
             self.rnn_output, _ = tf.nn.dynamic_rnn(self.rnn, self.x, dtype=tf.float32)
             self.rnn_output = self.rnn_output[:, -1]
-            self.rnn_output_dense1 = self.add_fc(self.rnn_output, 16)
+            self.rnn_output_dense = self.add_fc(self.rnn_output, 16)
+            self.rnn_output_dense1 = self.add_fc(self.rnn_output_dense, 16)
             self.rnn_output_dense2 = self.add_fc(self.rnn_output_dense1, 16)
-            self.rnn_output_dense3 = self.add_fc(self.rnn_output_dense2, 16)
-            self.y = self.add_fc(self.rnn_output_dense3, self.y_space)
+            self.y = self.add_fc(self.rnn_output_dense2, self.y_space)
 
     def _init_op(self):
         with tf.variable_scope('loss'):
@@ -86,21 +86,21 @@ def main(args):
 
     mode = args.mode
     # mode = 'test'
-    codes = ["SH_index"]
+    codes = ["SH_index_all"]
     # codes = ["600036", "601998"]
     # codes = args.codes
     # codes = ["AU88", "RB88", "CU88", "AL88"]
     market = args.market
     # market = 'future'
     # train_steps = args.train_steps
-    train_steps = 15000
+    train_steps = 30000
     # training_data_ratio = 0.98
     training_data_ratio = args.training_data_ratio
 
     env = Market(codes, start_date="2008-01-02", end_date="2019-03-18", **{
         "market": market,
         "use_sequence": True,
-        "seq_length": 20,
+        "seq_length": 3,
         "scaler": MinMaxScaler(feature_range=(0, 1)),
         "mix_index_state": True,
         "training_data_ratio": training_data_ratio,
@@ -110,7 +110,8 @@ def main(args):
 
     algorithm = Algorithm(tf.Session(config=config), env, env.seq_length, env.data_dim, env.code_count, **{
         "mode": mode,
-        "hidden_size": 32,
+        "hidden_size": 64,
+        "layer_size": 64,
         "enable_saver": True,
         "keep_prob": 0.8,
         "train_steps": train_steps,
